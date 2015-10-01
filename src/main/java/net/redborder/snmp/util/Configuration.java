@@ -41,6 +41,7 @@ public class Configuration {
                 SnmpTask snmpTask = new SnmpTask();
 
                 snmpTask.setType(type);
+                snmpTask.setPullingTime(Integer.valueOf((String) sensor.get("pullingTime")));
                 snmpTask.setPort((String) sensor.get("port"));
                 snmpTask.setIP((String) sensor.get("ip_address"));
                 snmpTask.setCommunity((String) sensor.get("community"));

@@ -40,19 +40,18 @@ public class SnmpWorker extends Thread {
     public SnmpWorker(SnmpTask snmpTask, LinkedBlockingQueue<Map<String, Object>> queue) {
         this.snmpTask = snmpTask;
         this.queue = queue;
-        this.pullingTime = snmpTask.getPullingTime();
+        this.pullingTime = snmpTask.getPullingTime().longValue();
     }
 
     @Override
     public void run() {
         try {
             running.set(true);
-            log.debug("Start snmp worker: {} with community: {}", snmpTask.getIP(), snmpTask.getCommunity());
+            log.info("Start snmp worker: {} with community: {}", snmpTask.getIP(), snmpTask.getCommunity());
             Address targetAddress = GenericAddress.parse(snmpTask.getIP() + "/" + snmpTask.getPort());
             TransportMapping transport = new DefaultUdpTransportMapping();
             Snmp snmp = new Snmp(transport);
             transport.listen();
-
 
             // setting up target
             CommunityTarget target = new CommunityTarget();
@@ -68,11 +67,11 @@ public class SnmpWorker extends Thread {
                 TreeUtils treeUtils = new TreeUtils(snmp, defaultPDUFactory);
                 List<TreeEvent> events = new ArrayList<>();
 
-                for (OID oid : SnmpOID.toList()) {
+                for (OID oid : SnmpOID.Meraki.toList()) {
                     events.addAll(treeUtils.getSubtree(target, oid));
                 }
 
-                log.info("Getting from snmp: {}  - values: {}", snmpTask.getIP(), events);
+                log.info("Getting from SNMP: {}  - content: {}", snmpTask.getIP(), !events.isEmpty());
 
                 Map<String, String> results = new HashMap<>();
 
@@ -89,17 +88,15 @@ public class SnmpWorker extends Thread {
                             // TODO
                         }
                     } else {
-                        System.out.println("Event: null");
                         // TODO
                     }
                 }
-                log.info("Executed in {} ms.", (System.currentTimeMillis() - start));
 
                 List<String> devices = getDevicesOIDs(results);
                 List<Map<String, List<String>>> devicesInterfaces = getDevicesInterfacesOIDs(results, devices);
                 List<Map<String, Object>> accessPoints = getAccessPoints(results, devicesInterfaces);
-                log.info("Snmp accesPoints from {} are {}", snmpTask.getIP(), accessPoints);
-
+                log.info("SNMP accesPoints from {} count: {}", snmpTask.getIP(), accessPoints.size());
+                log.info("SNMP response in {} ms.", (System.currentTimeMillis() - start));
 
                 try {
                     for (Map<String, Object> acessPoint : accessPoints) {
@@ -124,8 +121,8 @@ public class SnmpWorker extends Thread {
         List<String> devices = new ArrayList<>();
 
         for (String key : results.keySet()) {
-            if (key.contains(SnmpOID.DEV_MAC.toString() + ".")) {
-                devices.add(key.replace(SnmpOID.DEV_MAC.toString() + ".", ""));
+            if (key.contains(SnmpOID.Meraki.DEV_MAC.toString() + ".")) {
+                devices.add(key.replace(SnmpOID.Meraki.DEV_MAC.toString() + ".", ""));
             }
         }
         return devices;
@@ -137,8 +134,8 @@ public class SnmpWorker extends Thread {
             Map<String, List<String>> deviceInterfacesOIDs = new HashMap<>();
             List<String> interfacesOIDs = new ArrayList<>();
             for (String key : results.keySet()) {
-                if (key.contains(SnmpOID.DEV_INTERFACE_SENT_PKTS.toString() + "." + device + ".")) {
-                    interfacesOIDs.add(key.replace(SnmpOID.DEV_INTERFACE_SENT_PKTS.toString() + "." + device + ".", ""));
+                if (key.contains(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS.toString() + "." + device + ".")) {
+                    interfacesOIDs.add(key.replace(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS.toString() + "." + device + ".", ""));
                 }
 
             }
@@ -179,17 +176,17 @@ public class SnmpWorker extends Thread {
                 Long sentBytes = 0L;
                 Long recvBytes = 0L;
 
-                accessPoint.put("mac_address", results.get(SnmpOID.DEV_MAC + "." + deviceOID));
-                accessPoint.put("name", results.get(SnmpOID.DEV_NAME + "." + deviceOID));
-                accessPoint.put("ip_address", results.get(SnmpOID.DEV_IP + "." + deviceOID));
-                accessPoint.put("clients", results.get(SnmpOID.DEV_CLIENT_COUNT + "." + deviceOID));
-                accessPoint.put("status", parseStatus(results.get(SnmpOID.DEV_STATUS + "." + deviceOID)));
+                accessPoint.put("mac_address", results.get(SnmpOID.Meraki.DEV_MAC + "." + deviceOID));
+                accessPoint.put("name", results.get(SnmpOID.Meraki.DEV_NAME + "." + deviceOID));
+                accessPoint.put("ip_address", results.get(SnmpOID.Meraki.DEV_IP + "." + deviceOID));
+                accessPoint.put("clients", results.get(SnmpOID.Meraki.DEV_CLIENT_COUNT + "." + deviceOID));
+                accessPoint.put("status", parseStatus(results.get(SnmpOID.Meraki.DEV_STATUS + "." + deviceOID)));
 
                 for (String interfaceOID : interfacesOIDs) {
-                    sentPkts += Long.parseLong(results.get(SnmpOID.DEV_INTERFACE_SENT_PKTS + "." + deviceOID + "." + interfaceOID));
-                    recvPkts += Long.parseLong(results.get(SnmpOID.DEV_INTERFACE_RECV_PKTS + "." + deviceOID + "." + interfaceOID));
-                    sentBytes += Long.parseLong(results.get(SnmpOID.DEV_INTERFACE_SENT_BYTES + "." + deviceOID + "." + interfaceOID));
-                    recvBytes += Long.parseLong(results.get(SnmpOID.DEV_INTERFACE_RECV_BYTES + "." + deviceOID + "." + interfaceOID));
+                    sentPkts += Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS + "." + deviceOID + "." + interfaceOID));
+                    recvPkts += Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_PKTS + "." + deviceOID + "." + interfaceOID));
+                    sentBytes += Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + deviceOID + "." + interfaceOID));
+                    recvBytes += Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + deviceOID + "." + interfaceOID));
                 }
 
                 Map<String, Long> accessPointCache = cache.getFlows((String) accessPoint.get("mac_address"));
@@ -210,12 +207,8 @@ public class SnmpWorker extends Thread {
                 accessPointFlows.put("sent_bytes", sentBytes);
                 accessPointFlows.put("recv_bytes", recvBytes);
 
+                log.debug("Access Point: {}, FLOWS: {}", accessPoint.get("mac_address"), accessPointFlows);
                 cache.addCache((String) accessPoint.get("mac_address"), accessPointFlows);
-
-                accessPoint.put("sent_pkts", sentPkts);
-                accessPoint.put("recv_pkts", recvPkts);
-                accessPoint.put("sent_bytes", sentBytes);
-                accessPoint.put("recv_bytes", recvBytes);
 
                 accessPoint.put("sensor_ip", snmpTask.getIP());
                 accessPoint.put("enrichment", snmpTask.getEnrichment());

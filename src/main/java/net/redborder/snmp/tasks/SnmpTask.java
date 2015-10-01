@@ -15,11 +15,11 @@ public class SnmpTask extends MappedTask {
         initialize(m);
     }
 
-    public Long getPullingTime() {
-        return getData("pullingTime") == null ? 5 * 60L : (Long) getData("pullingTime");
+    public Integer getPullingTime() {
+        return getData("pullingTime") == null ? 5 * 60 : (Integer) getData("pullingTime");
     }
 
-    public void setPullingTime(Long pullingTime) {
+    public void setPullingTime(Integer pullingTime) {
         setData("pullingTime", pullingTime);
     }
 

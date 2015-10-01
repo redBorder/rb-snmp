@@ -55,13 +55,10 @@ public class KafkaManager extends Thread {
     @Override
     public void run() {
         log.info("KafkaManager is started!");
-        while (isInterrupted()) {
+        while (!isInterrupted()) {
             Map<String, Object> event;
-
             try {
                 event = queue.take();
-
-
                 if (event != null) {
                     String directions[] = new String[]{"ingress", "egress"};
                     Map<String, Object> state = new HashMap<>();
@@ -76,7 +73,8 @@ public class KafkaManager extends Thread {
                     state.put("sensor_ip", event.get("sensor_ip"));
                     state.putAll(enrichment);
 
-                    if ((Boolean) event.get("is_first")) {
+                    if (!(Boolean) event.get("is_first")) {
+
                         for (String direction : directions) {
                             Map<String, Object> directionStats = new HashMap<>();
                             Long bytes = (Long) event.get("sent_bytes");
@@ -86,20 +84,27 @@ public class KafkaManager extends Thread {
                                 pkts = (Long) event.get("recv_pkts");
                             }
 
-                            directionStats.put("bytes", bytes);
-                            directionStats.put("pkts", pkts);
-                            directionStats.put("direction", direction);
-                            directionStats.put("timestamp", time_now);
-                            directionStats.put("time_switched", time_now - (5 * 60));
-                            directionStats.put("sensor_ip", "");
-                            directionStats.put("wireless_station", event.get("mac_address"));
-                            directionStats.put("wireless_station_ip", event.get("ip_address"));
-                            directionStats.put("device_category", "stations");
-                            directionStats.put("type", "snmpstats");
-                            directionStats.put("sensor_ip", event.get("sensor_ip"));
-                            directionStats.putAll(enrichment);
+                            if (bytes < 0 || pkts < 0) {
+                                log.warn("Flow's lower than 0!. Sensor: {}, AP: {}, Bytes: {}, Pkts: {}",
+                                        event.get("sensor_ip"), event.get("mac_address"), bytes, pkts);
+                            } else {
+                                log.debug("Direction: {}, bytes: {}", direction, bytes);
+                                log.debug("Direction: {}, pkts: {}", direction, pkts);
 
-                            send("rb_flow", (String) event.get("mac_address"), directionStats);
+                                directionStats.put("bytes", bytes);
+                                directionStats.put("pkts", pkts);
+                                directionStats.put("direction", direction);
+                                directionStats.put("timestamp", time_now);
+                                directionStats.put("time_switched", time_now - (60));
+                                directionStats.put("wireless_station", event.get("mac_address"));
+                                directionStats.put("wireless_station_ip", event.get("ip_address"));
+                                directionStats.put("device_category", "stations");
+                                directionStats.put("type", "snmp-stats");
+                                directionStats.put("sensor_ip", event.get("sensor_ip"));
+                                directionStats.putAll(enrichment);
+
+                                send("rb_flow", (String) event.get("mac_address"), directionStats);
+                            }
                         }
                     }
                     send("rb_state", (String) event.get("mac_address"), state);
