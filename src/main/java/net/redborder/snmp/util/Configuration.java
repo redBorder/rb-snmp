@@ -1,8 +1,10 @@
 package net.redborder.snmp.util;
 
 
+import net.redborder.clusterizer.Task;
 import net.redborder.snmp.tasks.SnmpTask;
 import org.ho.yaml.Yaml;
+import org.snmp4j.Snmp;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,9 +18,14 @@ public class Configuration {
     private List<Map<String, Object>> sensors;
     public static Configuration configuration = new Configuration();
 
-    List<SnmpTask> snmpTasks = new ArrayList<>();
+    List<Task> snmpTasks = new ArrayList<>();
 
     public static Configuration getConfiguration() {
+        try {
+            configuration.readConfiguration();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
         return configuration;
     }
 
@@ -41,9 +48,11 @@ public class Configuration {
                 snmpTasks.add(snmpTask);
             }
         }
-
     }
 
+    public List<Task> getSnmpTasks(){
+        return snmpTasks;
+    }
 
     public <T> T getFromGeneral(String property) {
         T ret = null;
@@ -54,7 +63,6 @@ public class Configuration {
 
         return ret;
     }
-
 
     public static class Dimensions {
         public static final String ZKCONNECT = "zk_connect";

@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SnmpWorker extends Thread {
     SnmpTask snmpTask;
@@ -29,6 +30,7 @@ public class SnmpWorker extends Thread {
     LinkedBlockingQueue<Map<String, Object>> queue;
     AccessPointDB cache = new AccessPointDB();
     Long pullingTime = 5 * 60L;
+    volatile AtomicBoolean running = new AtomicBoolean(false);
 
 
     public SnmpWorker(SnmpTask snmpTask, LinkedBlockingQueue<Map<String, Object>> queue) {
@@ -40,7 +42,7 @@ public class SnmpWorker extends Thread {
     @Override
     public void run() {
         try {
-
+            running.set(true);
             Address targetAddress = GenericAddress.parse(snmpTask.getIP() + "/" + snmpTask.getPort());
             TransportMapping transport = new DefaultUdpTransportMapping();
             Snmp snmp = new Snmp(transport);
@@ -55,7 +57,7 @@ public class SnmpWorker extends Thread {
             target.setTimeout(1000 * 3);
             target.setVersion(SnmpConstants.version2c);
 
-            while (true) {
+            while (running.get()) {
                 Long start = System.currentTimeMillis();
                 DefaultPDUFactory defaultPDUFactory = new DefaultPDUFactory();
                 TreeUtils treeUtils = new TreeUtils(snmp, defaultPDUFactory);
@@ -93,7 +95,7 @@ public class SnmpWorker extends Thread {
 
 
                 try {
-                    for(Map<String, Object> acessPoint : accessPoints) {
+                    for (Map<String, Object> acessPoint : accessPoints) {
                         queue.put(acessPoint);
                     }
 
@@ -102,6 +104,9 @@ public class SnmpWorker extends Thread {
                     e.printStackTrace();
                 }
             }
+
+            snmp.close();
+            transport.close();
         } catch (IOException e) {
             e.printStackTrace();
             // TODO
@@ -136,12 +141,18 @@ public class SnmpWorker extends Thread {
         return devicesInterfacesOIDs;
     }
 
+    public void shutdown(){
+        this.running.set(false);
+
+
+    }
+
     public String parseStatus(String status) {
         String parsedStatus;
         if (status.equals("1"))
-            parsedStatus = "ON";
+            parsedStatus = "on";
         else
-            parsedStatus = "OFF";
+            parsedStatus = "off";
         return parsedStatus;
     }
 
