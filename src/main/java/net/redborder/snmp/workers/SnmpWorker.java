@@ -3,6 +3,8 @@ package net.redborder.snmp.workers;
 import net.redborder.snmp.tasks.SnmpTask;
 import net.redborder.snmp.util.AccessPointDB;
 import net.redborder.snmp.util.SnmpOID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
@@ -25,11 +27,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SnmpWorker extends Thread {
+    final Logger log = LoggerFactory.getLogger(SnmpWorker.class);
+
     SnmpTask snmpTask;
     ExecutorService executorService = Executors.newFixedThreadPool(5);
     LinkedBlockingQueue<Map<String, Object>> queue;
     AccessPointDB cache = new AccessPointDB();
-    Long pullingTime = 5 * 60L;
+    Long pullingTime;
     volatile AtomicBoolean running = new AtomicBoolean(false);
 
 
@@ -43,6 +47,7 @@ public class SnmpWorker extends Thread {
     public void run() {
         try {
             running.set(true);
+            log.debug("Start snmp worker: {} with community: {}", snmpTask.getIP(), snmpTask.getCommunity());
             Address targetAddress = GenericAddress.parse(snmpTask.getIP() + "/" + snmpTask.getPort());
             TransportMapping transport = new DefaultUdpTransportMapping();
             Snmp snmp = new Snmp(transport);
@@ -67,6 +72,8 @@ public class SnmpWorker extends Thread {
                     events.addAll(treeUtils.getSubtree(target, oid));
                 }
 
+                log.info("Getting from snmp: {}  - values: {}", snmpTask.getIP(), events);
+
                 Map<String, String> results = new HashMap<>();
 
                 // Get snmpwalk result.
@@ -86,12 +93,12 @@ public class SnmpWorker extends Thread {
                         // TODO
                     }
                 }
-                System.out.println("Executed in " + (System.currentTimeMillis() - start) + "ms.");
+                log.info("Executed in {} ms.", (System.currentTimeMillis() - start));
 
                 List<String> devices = getDevicesOIDs(results);
                 List<Map<String, List<String>>> devicesInterfaces = getDevicesInterfacesOIDs(results, devices);
                 List<Map<String, Object>> accessPoints = getAccessPoints(results, devicesInterfaces);
-                System.out.println("MAPA: " + accessPoints);
+                log.info("Snmp accesPoints from {} are {}", snmpTask.getIP(), accessPoints);
 
 
                 try {

@@ -33,7 +33,7 @@ public class KafkaManager extends Thread {
      */
 
     public KafkaManager(LinkedBlockingQueue<Map<String, Object>> queue) {
-        this.queue=queue;
+        this.queue = queue;
         Configuration configuration = Configuration.getConfiguration();
         // The producer config attributes
         Properties props = new Properties();
@@ -54,59 +54,61 @@ public class KafkaManager extends Thread {
 
     @Override
     public void run() {
-
+        log.info("KafkaManager is started!");
         while (isInterrupted()) {
-            Map<String, Object> event = null;
+            Map<String, Object> event;
 
             try {
                 event = queue.take();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
-            if (event != null) {
-                String directions[] = new String[]{"ingress", "egress"};
-                Map<String, Object> state = new HashMap<>();
-                Long time_now = System.currentTimeMillis() / 1000;
-                Map<String, Object> enrichment = (Map<String, Object>) event.get("enrichment");
 
-                state.put("wireless_station", event.get("mac_address"));
-                state.put("wireless_station_ip", event.get("ip_address"));
-                state.put("type", "snmp_apMonitor");
-                state.put("timestamp", time_now);
-                state.put("status", event.get("status"));
-                state.put("sensor_ip", event.get("sensor_ip"));
-                state.putAll(enrichment);
+                if (event != null) {
+                    String directions[] = new String[]{"ingress", "egress"};
+                    Map<String, Object> state = new HashMap<>();
+                    Long time_now = System.currentTimeMillis() / 1000;
+                    Map<String, Object> enrichment = (Map<String, Object>) event.get("enrichment");
 
-                if ((Boolean) event.get("is_first")) {
-                    for (String direction : directions) {
-                        Map<String, Object> directionStats = new HashMap<>();
-                        Long bytes = (Long) event.get("sent_bytes");
-                        Long pkts = (Long) event.get("sent_pkts");
-                        if (direction.equals("ingress")) {
-                            bytes = (Long) event.get("recv_bytes");
-                            pkts = (Long) event.get("recv_pkts");
+                    state.put("wireless_station", event.get("mac_address"));
+                    state.put("wireless_station_ip", event.get("ip_address"));
+                    state.put("type", "snmp_apMonitor");
+                    state.put("timestamp", time_now);
+                    state.put("status", event.get("status"));
+                    state.put("sensor_ip", event.get("sensor_ip"));
+                    state.putAll(enrichment);
+
+                    if ((Boolean) event.get("is_first")) {
+                        for (String direction : directions) {
+                            Map<String, Object> directionStats = new HashMap<>();
+                            Long bytes = (Long) event.get("sent_bytes");
+                            Long pkts = (Long) event.get("sent_pkts");
+                            if (direction.equals("ingress")) {
+                                bytes = (Long) event.get("recv_bytes");
+                                pkts = (Long) event.get("recv_pkts");
+                            }
+
+                            directionStats.put("bytes", bytes);
+                            directionStats.put("pkts", pkts);
+                            directionStats.put("direction", direction);
+                            directionStats.put("timestamp", time_now);
+                            directionStats.put("time_switched", time_now - (5 * 60));
+                            directionStats.put("sensor_ip", "");
+                            directionStats.put("wireless_station", event.get("mac_address"));
+                            directionStats.put("wireless_station_ip", event.get("ip_address"));
+                            directionStats.put("device_category", "stations");
+                            directionStats.put("type", "snmpstats");
+                            directionStats.put("sensor_ip", event.get("sensor_ip"));
+                            directionStats.putAll(enrichment);
+
+                            send("rb_flow", (String) event.get("mac_address"), directionStats);
                         }
-
-                        directionStats.put("bytes", bytes);
-                        directionStats.put("pkts", pkts);
-                        directionStats.put("direction", direction);
-                        directionStats.put("timestamp", time_now);
-                        directionStats.put("time_switched", time_now - (5 * 60));
-                        directionStats.put("sensor_ip", "");
-                        directionStats.put("wireless_station", event.get("mac_address"));
-                        directionStats.put("wireless_station_ip", event.get("ip_address"));
-                        directionStats.put("device_category", "stations");
-                        directionStats.put("type", "snmpstats");
-                        directionStats.put("sensor_ip", event.get("sensor_ip"));
-                        directionStats.putAll(enrichment);
-
-                        send("rb_flow", (String) event.get("mac_address"), directionStats);
                     }
+                    send("rb_state", (String) event.get("mac_address"), state);
                 }
-                send("rb_state", (String) event.get("mac_address"), state);
+            } catch (InterruptedException e) {
+                log.info("KafkaManager is stopping ...");
             }
         }
+
     }
 
     /**
@@ -115,6 +117,7 @@ public class KafkaManager extends Thread {
 
     public void shutdown() {
         producer.close();
+        currentThread().interrupt();
     }
 
     /**

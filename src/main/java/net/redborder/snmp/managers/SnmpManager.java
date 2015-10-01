@@ -5,12 +5,15 @@ import net.redborder.clusterizer.TasksChangedListener;
 import net.redborder.snmp.util.AccessPointDB;
 import net.redborder.snmp.workers.SnmpWorker;
 import net.redborder.snmp.tasks.SnmpTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SnmpManager extends Thread implements TasksChangedListener {
+    private static final Logger log = LoggerFactory.getLogger(KafkaManager.class);
 
     private List<SnmpTask> tasks = new ArrayList<>();
     private List<String> workersUuids = new ArrayList<>();
@@ -25,6 +28,8 @@ public class SnmpManager extends Thread implements TasksChangedListener {
 
     @Override
     public void run() {
+        log.info("KafkaManager is started!");
+
         running.set(true);
         while (running.get()) {
             try {
@@ -70,7 +75,7 @@ public class SnmpManager extends Thread implements TasksChangedListener {
     @Override
     public void updateTasks(List<Task> list) {
         for (Task t : list) {
-            SnmpTask snmpTask = (SnmpTask) t;
+            SnmpTask snmpTask = new SnmpTask(t.asMap());
             tasks.add(snmpTask);
         }
 

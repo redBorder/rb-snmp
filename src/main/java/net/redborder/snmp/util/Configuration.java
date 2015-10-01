@@ -30,13 +30,14 @@ public class Configuration {
     }
 
     public void readConfiguration() throws FileNotFoundException {
+        snmpTasks.clear();
         Map<String, Object> map = (Map<String, Object>) Yaml.load(new File(CONFIG_FILE_PATH));
         general = (Map<String, Object>) map.get("general");
         sensors = (List<Map<String, Object>>) map.get("sensors");
 
         for (Map<String, Object> sensor : sensors) {
             String type = (String) sensor.get("type");
-            if (!type.equals("MERAKI") || !type.equals("WLC")) {
+            if (!type.toUpperCase().equals("MERAKI") || !type.toUpperCase().equals("WLC")) {
                 SnmpTask snmpTask = new SnmpTask();
 
                 snmpTask.setType(type);

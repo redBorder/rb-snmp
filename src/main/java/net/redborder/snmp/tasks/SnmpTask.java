@@ -6,8 +6,17 @@ import java.util.Map;
 
 public class SnmpTask extends MappedTask {
 
+
+    public SnmpTask(){
+
+    }
+
+    public SnmpTask(Map<? extends String, ? extends Object> m) {
+        initialize(m);
+    }
+
     public Long getPullingTime() {
-        return getData("pullingTime");
+        return getData("pullingTime") == null ? 5 * 60L : (Long) getData("pullingTime");
     }
 
     public void setPullingTime(Long pullingTime) {
