@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.redborder</groupId>
     <artifactId>rb-snmp</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
 
     <scm>
         <developerConnection>scm:git:git@gitlab.redborder.lan:bigdata/rb-snmp.git</developerConnection>
@@ -23,9 +21,39 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.snmp4j</groupId>
+            <artifactId>snmp4j</artifactId>
+            <version>1.10.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava-collections</artifactId>
+            <version>r03</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.12</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.12</version>
+        </dependency>
+
+
+        <dependency>
             <groupId>net.redborder</groupId>
             <artifactId>clusterizer</artifactId>
-            <version>0.3.3</version>
+            <version>0.3.4</version>
         </dependency>
 
         <dependency>
