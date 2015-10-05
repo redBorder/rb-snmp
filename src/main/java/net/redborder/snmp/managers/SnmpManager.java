@@ -2,9 +2,10 @@ package net.redborder.snmp.managers;
 
 import net.redborder.clusterizer.Task;
 import net.redborder.clusterizer.TasksChangedListener;
-import net.redborder.snmp.util.AccessPointDB;
-import net.redborder.snmp.workers.SnmpWorker;
+import net.redborder.snmp.workers.SnmpMerakiWorker;
 import net.redborder.snmp.tasks.SnmpTask;
+import net.redborder.snmp.workers.SnmpWLCWorker;
+import net.redborder.snmp.workers.Worker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +19,7 @@ public class SnmpManager extends Thread implements TasksChangedListener {
     private List<SnmpTask> tasks = new ArrayList<>();
     private List<String> workersUuids = new ArrayList<>();
     private LinkedBlockingQueue<Map<String, Object>> queue;
-    private Map<String, SnmpWorker> workers = new HashMap<>();
+    private Map<String, Worker> workers = new HashMap<>();
     private Object run = new Object();
     volatile AtomicBoolean running = new AtomicBoolean(false);
 
@@ -41,9 +42,16 @@ public class SnmpManager extends Thread implements TasksChangedListener {
                     String uuid = task.getIP() + "_" + task.getCommunity();
                     workersUuids.add(uuid);
                     if (!workers.containsKey(uuid)) {
-                        SnmpWorker worker = new SnmpWorker(task, queue);
-                        workers.put(uuid, worker);
-                        worker.start();
+
+                        if(task.getType().toUpperCase().equals("MERAKI")){
+                            SnmpMerakiWorker worker = new SnmpMerakiWorker(task, queue);
+                            workers.put(uuid, worker);
+                            worker.start();
+                        } else {
+                            SnmpWLCWorker worker = new SnmpWLCWorker(task, queue);
+                            workers.put(uuid, worker);
+                            worker.start();
+                        }
                     }
                 }
 
@@ -67,7 +75,7 @@ public class SnmpManager extends Thread implements TasksChangedListener {
             run.notifyAll();
         }
 
-        for (SnmpWorker worker : workers.values()){
+        for (Worker worker : workers.values()){
             worker.shutdown();
         }
     }

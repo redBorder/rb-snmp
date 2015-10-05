@@ -65,49 +65,49 @@ public class KafkaManager extends Thread {
                     Long time_now = System.currentTimeMillis() / 1000;
                     Map<String, Object> enrichment = (Map<String, Object>) event.get("enrichment");
 
-                    state.put("wireless_station", event.get("mac_address"));
-                    state.put("wireless_station_ip", event.get("ip_address"));
-                    state.put("type", "snmp_apMonitor");
-                    state.put("timestamp", time_now);
-                    state.put("status", event.get("status"));
-                    state.put("sensor_ip", event.get("sensor_ip"));
-                    state.putAll(enrichment);
+                    if (event.get("devClientCount") != null) {
+                        state.put("wireless_station", event.get("devInterfaceMac"));
+                        state.put("wireless_station_name", event.get("devName"));
+                        state.put("client_count", event.get("devClientCount"));
+                        state.put("type", "snmp_apMonitor");
+                        state.put("timestamp", time_now);
+                        state.put("status", event.get("devStatus"));
+                        state.put("sensor_ip", event.get("sensorIp"));
+                        state.putAll(enrichment);
 
-                    if (!(Boolean) event.get("is_first")) {
+                        send("rb_state", (String) event.get("devInterfaceMac"), state);
+                    }
 
+                    if ((Boolean) event.get("validForStats")) {
                         for (String direction : directions) {
                             Map<String, Object> directionStats = new HashMap<>();
-                            Long bytes = (Long) event.get("sent_bytes");
-                            Long pkts = (Long) event.get("sent_pkts");
+                            Long bytes = (Long) event.get("devInterfaceSentBytes");
+                            Long pkts = (Long) event.get("devInterfaceSentPkts");
                             if (direction.equals("ingress")) {
-                                bytes = (Long) event.get("recv_bytes");
-                                pkts = (Long) event.get("recv_pkts");
+                                bytes = (Long) event.get("devInterfaceSentPkts");
+                                pkts = (Long) event.get("devInterfaceSentBytes");
                             }
-
                             if (bytes < 0 || pkts < 0) {
                                 log.warn("Flow's lower than 0!. Sensor: {}, AP: {}, Bytes: {}, Pkts: {}",
-                                        event.get("sensor_ip"), event.get("mac_address"), bytes, pkts);
+                                        event.get("sensor_ip"), event.get("devInterfaceMac"), bytes, pkts);
                             } else {
-                                log.debug("Direction: {}, bytes: {}", direction, bytes);
-                                log.debug("Direction: {}, pkts: {}", direction, pkts);
-
                                 directionStats.put("bytes", bytes);
                                 directionStats.put("pkts", pkts);
                                 directionStats.put("direction", direction);
                                 directionStats.put("timestamp", time_now);
-                                directionStats.put("time_switched", time_now - (60));
-                                directionStats.put("wireless_station", event.get("mac_address"));
-                                directionStats.put("wireless_station_ip", event.get("ip_address"));
+                                directionStats.put("time_switched", time_now - (Long) event.get("timeSwitched"));
+                                directionStats.put("wireless_station", event.get("devInterfaceMac"));
+                                directionStats.put("interface_name", event.get("devInterfaceName"));
+                                directionStats.put("wireless_station_name", event.get("devName"));
                                 directionStats.put("device_category", "stations");
                                 directionStats.put("type", "snmp-stats");
-                                directionStats.put("sensor_ip", event.get("sensor_ip"));
+                                directionStats.put("sensor_ip", event.get("sensorIp"));
                                 directionStats.putAll(enrichment);
 
-                                send("rb_flow", (String) event.get("mac_address"), directionStats);
+                                send("rb_flow", (String) event.get("devInterfaceMac"), directionStats);
                             }
                         }
                     }
-                    send("rb_state", (String) event.get("mac_address"), state);
                 }
             } catch (InterruptedException e) {
                 log.info("KafkaManager is stopping ...");

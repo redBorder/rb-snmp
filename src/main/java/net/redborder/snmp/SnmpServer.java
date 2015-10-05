@@ -1,6 +1,5 @@
 package net.redborder.snmp;
 
-import net.redborder.clusterizer.Task;
 import net.redborder.clusterizer.ZkTasksHandler;
 import net.redborder.snmp.managers.KafkaManager;
 import net.redborder.snmp.managers.SnmpManager;
@@ -11,7 +10,6 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 import java.io.FileNotFoundException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
