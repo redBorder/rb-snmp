@@ -129,9 +129,11 @@ public class SnmpWLCWorker extends Worker {
     public List<Map<String, Object>> getDevicesData(Map<String, String> results, List<String> devicesOIDs) {
 
         List<Map<String, Object>> devicesData = new ArrayList<>();
+        List<String> devicesMacAddress = new ArrayList<>();
 
         for (String deviceOID : devicesOIDs) {
             String macAddress = results.get(SnmpOID.WirelessLanController.DEV_MAC + "." + deviceOID + ".0");
+            devicesMacAddress.add(macAddress);
             Map<String, Object> deviceData = new HashMap<>();
 
             deviceData.put("validForStats", false);
@@ -144,10 +146,19 @@ public class SnmpWLCWorker extends Worker {
             deviceData.put("devClientCount",
                     results.get(SnmpOID.WirelessLanController.DEV_CLIENTS_COUNT + "." + deviceOID));
             deviceData.put("devStatus", "on");
+
+            cache.addCache(macAddress, deviceData);
             devicesData.add(deviceData);
         }
 
-        // TODO: Use cache to update status
+        for (Map.Entry<String, Map<String, Object>> accessPoint : cache.getAccessPoints().entrySet()) {
+            if (!devicesMacAddress.contains(accessPoint.getKey().toString())) {
+                accessPoint.getValue().put("timeSwitched", pullingTime);
+                accessPoint.getValue().put("devClientCount", "0");
+                accessPoint.getValue().put("devStatus", "off");
+                devicesData.add(accessPoint.getValue());
+            }
+        }
 
         return devicesData;
     }

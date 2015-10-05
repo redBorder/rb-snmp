@@ -1,20 +1,16 @@
 package net.redborder.snmp.util;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class AccessPointStatusDB {
-    private List<Map<String, Object>> cache = new ArrayList<>();
+    private Map<String, Map<String, Object>> cache = new HashMap<>();
 
     public void addCache(String macAddress, Map<String, Object> accessPointData) {
-        Map<String, Object> accessPoint = new HashMap<>();
-        accessPoint.put(macAddress, accessPointData);
-        cache.add(accessPoint);
+        cache.put(macAddress, accessPointData);
     }
 
-    public List<Map<String, Object>> getAccessPoint() {
+    public Map<String, Map<String, Object>> getAccessPoints() {
         return cache;
     }
 }
