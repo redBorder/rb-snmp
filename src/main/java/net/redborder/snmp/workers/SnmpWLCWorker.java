@@ -1,7 +1,6 @@
 package net.redborder.snmp.workers;
 
 import net.redborder.snmp.tasks.SnmpTask;
-import net.redborder.snmp.util.AccessPointStatusDB;
 import net.redborder.snmp.util.SnmpOID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +31,6 @@ public class SnmpWLCWorker extends Worker {
     SnmpTask snmpTask;
     ExecutorService executorService = Executors.newFixedThreadPool(5);
     LinkedBlockingQueue<Map<String, Object>> queue;
-    AccessPointStatusDB cache = new AccessPointStatusDB();
     Long pullingTime;
     volatile AtomicBoolean running = new AtomicBoolean(false);
 
@@ -146,20 +144,8 @@ public class SnmpWLCWorker extends Worker {
             deviceData.put("devClientCount",
                     results.get(SnmpOID.WirelessLanController.DEV_CLIENTS_COUNT + "." + deviceOID));
             deviceData.put("devStatus", "on");
-
-            cache.addCache(macAddress, deviceData);
             devicesData.add(deviceData);
         }
-
-        for (Map.Entry<String, Map<String, Object>> accessPoint : cache.getAccessPoints().entrySet()) {
-            if (!devicesMacAddress.contains(accessPoint.getKey().toString())) {
-                accessPoint.getValue().put("timeSwitched", pullingTime);
-                accessPoint.getValue().put("devClientCount", "0");
-                accessPoint.getValue().put("devStatus", "off");
-                devicesData.add(accessPoint.getValue());
-            }
-        }
-
         return devicesData;
     }
 
