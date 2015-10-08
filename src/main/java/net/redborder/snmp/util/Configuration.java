@@ -35,24 +35,28 @@ public class Configuration {
         general = (Map<String, Object>) map.get("general");
         sensors = (List<Map<String, Object>>) map.get("sensors");
 
-        for (Map<String, Object> sensor : sensors) {
-            String type = (String) sensor.get("type");
-            if (!type.toUpperCase().equals("MERAKI") || !type.toUpperCase().equals("WLC")) {
-                SnmpTask snmpTask = new SnmpTask();
+        if (sensors != null) {
+            for (Map<String, Object> sensor : sensors) {
+                String type = (String) sensor.get("type");
+                if (!type.toUpperCase().equals("MERAKI") || !type.toUpperCase().equals("WLC")) {
+                    SnmpTask snmpTask = new SnmpTask();
 
-                snmpTask.setType(type);
-                snmpTask.setPullingTime(Integer.valueOf((String) sensor.get("pullingTime")));
-                snmpTask.setPort((String) sensor.get("port"));
-                snmpTask.setIP((String) sensor.get("ip_address"));
-                snmpTask.setCommunity((String) sensor.get("community"));
-                snmpTask.setEnrichment((Map<String, Object>) sensor.get("enrichment"));
+                    snmpTask.setType(type);
+                    snmpTask.setPullingTime(Integer.valueOf((String) sensor.get("pullingTime")));
+                    snmpTask.setPort((String) sensor.get("port"));
+                    snmpTask.setIP((String) sensor.get("ip_address"));
+                    snmpTask.setCommunity((String) sensor.get("community"));
+                    snmpTask.setEnrichment((Map<String, Object>) sensor.get("enrichment"));
 
-                snmpTasks.add(snmpTask);
+                    snmpTasks.add(snmpTask);
+                }
             }
+        } else {
+            sensors = new ArrayList<>();
         }
     }
 
-    public List<Task> getSnmpTasks(){
+    public List<Task> getSnmpTasks() {
         return snmpTasks;
     }
 
