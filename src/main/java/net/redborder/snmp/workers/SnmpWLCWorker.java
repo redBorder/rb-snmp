@@ -100,7 +100,9 @@ public class SnmpWLCWorker extends Worker {
                     for (Map<String, Object> interfaceData : devicesData) {
                         queue.put(interfaceData);
                     }
-                    TimeUnit.SECONDS.sleep(pullingTime);
+                    Long exec_time = (System.currentTimeMillis() - start) / 1000;
+                    if ((pullingTime - exec_time) > 0)
+                        TimeUnit.SECONDS.sleep(pullingTime - exec_time);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
