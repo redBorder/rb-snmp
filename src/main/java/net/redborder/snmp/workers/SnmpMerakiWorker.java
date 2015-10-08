@@ -17,8 +17,6 @@ import org.snmp4j.util.TreeUtils;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,8 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SnmpMerakiWorker extends Worker {
     final Logger log = LoggerFactory.getLogger(SnmpMerakiWorker.class);
 
-    SnmpTask snmpTask;
-    ExecutorService executorService = Executors.newFixedThreadPool(5);
+    public SnmpTask snmpTask;
     LinkedBlockingQueue<Map<String, Object>> queue;
     InterfacesFlowsDB cache = new InterfacesFlowsDB();
     Long pullingTime;
@@ -113,6 +110,11 @@ public class SnmpMerakiWorker extends Worker {
             e.printStackTrace();
             // TODO
         }
+    }
+
+    @Override
+    public SnmpTask getSnmpTask(){
+        return snmpTask;
     }
 
     public List<String> getInterfacesOIDs(Map<String, String> results) {
