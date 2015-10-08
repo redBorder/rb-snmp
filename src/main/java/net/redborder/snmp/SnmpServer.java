@@ -35,7 +35,6 @@ public class SnmpServer {
         snmpManager.start();
 
         zkTasksHandler.setTasks(configuration.getSnmpTasks());
-        zkTasksHandler.wakeup();
 
         log.info("SnmpServer is started!");
         Runtime.getRuntime().addShutdownHook(new Thread() {
