@@ -12,6 +12,7 @@ import sun.misc.SignalHandler;
 import java.io.FileNotFoundException;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class SnmpServer {
     public static void main(String[] args) {
@@ -29,11 +30,11 @@ public class SnmpServer {
 
         /* List oft SnmpTasks */
         zkTasksHandler.addListener(snmpManager);
-        zkTasksHandler.setTasks(configuration.getSnmpTasks());
-        zkTasksHandler.wakeup();
 
         kafkaManager.start();
         snmpManager.start();
+
+        zkTasksHandler.setTasks(configuration.getSnmpTasks());
 
         log.info("SnmpServer is started!");
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -48,6 +49,8 @@ public class SnmpServer {
                 try {
                     configuration.readConfiguration();
                     zkTasksHandler.setTasks(configuration.getSnmpTasks());
+                    zkTasksHandler.wakeup();
+
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
