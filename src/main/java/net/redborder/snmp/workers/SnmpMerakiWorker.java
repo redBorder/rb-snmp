@@ -130,6 +130,7 @@ public class SnmpMerakiWorker extends Worker {
     public List<Map<String, Object>> getInterfacesData(Map<String, String> results, List<String> interfacesOIDs) {
 
         List<Map<String, Object>> interfacesData = new ArrayList<>();
+        Map<String, Long> totalBytes = new HashMap<>();
 
         for (String interfaceOID : interfacesOIDs) {
             Map<String, Long> interfaceCache = cache.getFlows(interfaceOID);
@@ -147,6 +148,7 @@ public class SnmpMerakiWorker extends Worker {
             interfaceData.put("devStatus", parseStatus(results.get(SnmpOID.Meraki.DEV_STATUS + "." + ap)));
 
             String macAddress = results.get(SnmpOID.Meraki.DEV_INTERFACE_MAC + "." + interfaceOID);
+            if (totalBytes.get(macAddress) == null) totalBytes.put(macAddress, 0L);
 
             if (!interfacesData.contains(macAddress)) {
                 interfaceData.put("devClientCount", results.get(SnmpOID.Meraki.DEV_CLIENT_COUNT + "." + ap));
@@ -202,6 +204,8 @@ public class SnmpMerakiWorker extends Worker {
                                 MAX - interfaceCache.get("devInterfaceRecvBytes");
             }
 
+            totalBytes.put(macAddress, totalBytes.get(macAddress) + devInterfaceSentBytesDiff + devInterfaceRecvBytesDiff);
+
             interfaceFlows.put("devInterfaceSentPkts", devInterfaceSentPktsDiff);
             interfaceFlows.put("devInterfaceRecvPkts", devInterfaceRecvPktsDiff);
             interfaceFlows.put("devInterfaceSentBytes", devInterfaceSentBytesDiff);
@@ -211,6 +215,11 @@ public class SnmpMerakiWorker extends Worker {
             interfaceData.putAll(interfaceFlows);
             interfacesData.add(interfaceData);
         }
+
+        for (Map.Entry<String, Long> entry : totalBytes.entrySet()){
+            log.trace("AP: {}, Bytes: {}", entry.getKey(), entry.getValue());
+        }
+
         return interfacesData;
     }
 
