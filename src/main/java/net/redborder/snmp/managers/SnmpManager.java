@@ -65,6 +65,13 @@ public class SnmpManager extends Thread implements TasksChangedListener {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
+            List<String> runningTask = new ArrayList<>();
+            for(Worker worker : workers.values()){
+                runningTask.add(worker.getSnmpTask().getIP() + ":" + worker.getSnmpTask().getCommunity());
+            }
+
+            log.info("Running task: {} ", runningTask);
         }
 
     }

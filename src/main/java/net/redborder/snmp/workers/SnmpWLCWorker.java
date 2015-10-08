@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,7 +27,6 @@ public class SnmpWLCWorker extends Worker {
 
     final Logger log = LoggerFactory.getLogger(SnmpMerakiWorker.class);
     SnmpTask snmpTask;
-    ExecutorService executorService = Executors.newFixedThreadPool(5);
     LinkedBlockingQueue<Map<String, Object>> queue;
     Long pullingTime;
     volatile AtomicBoolean running = new AtomicBoolean(false);
@@ -91,7 +88,9 @@ public class SnmpWLCWorker extends Worker {
                 }
 
                 List<String> devicesOIDs = getDevicesOIDs(results);
-                List<Map<String, Object>> devicesData = getDevicesData(results, devicesOIDs);
+                Long exec_time = (System.currentTimeMillis() - start) / 1000;
+
+                List<Map<String, Object>> devicesData = getDevicesData(results, devicesOIDs, pullingTime - exec_time);
 
                 log.info("SNMP accessPoints from {} count: {}", snmpTask.getIP(), devicesData.size());
                 log.info("SNMP response in {} ms.", (System.currentTimeMillis() - start));
@@ -100,7 +99,6 @@ public class SnmpWLCWorker extends Worker {
                     for (Map<String, Object> interfaceData : devicesData) {
                         queue.put(interfaceData);
                     }
-                    Long exec_time = (System.currentTimeMillis() - start) / 1000;
                     if ((pullingTime - exec_time) > 0)
                         TimeUnit.SECONDS.sleep(pullingTime - exec_time);
                 } catch (InterruptedException e) {
@@ -126,7 +124,12 @@ public class SnmpWLCWorker extends Worker {
         return devicesOIDs;
     }
 
-    public List<Map<String, Object>> getDevicesData(Map<String, String> results, List<String> devicesOIDs) {
+    @Override
+    public SnmpTask getSnmpTask(){
+        return snmpTask;
+    }
+
+    public List<Map<String, Object>> getDevicesData(Map<String, String> results, List<String> devicesOIDs, Long split) {
 
         List<Map<String, Object>> devicesData = new ArrayList<>();
         List<String> devicesMacAddress = new ArrayList<>();
@@ -139,7 +142,7 @@ public class SnmpWLCWorker extends Worker {
             deviceData.put("validForStats", false);
             deviceData.put("sensorIp", snmpTask.getIP());
             deviceData.put("enrichment", snmpTask.getEnrichment());
-            deviceData.put("timeSwitched", pullingTime);
+            deviceData.put("timeSwitched", split);
 
             deviceData.put("devName", results.get(SnmpOID.WirelessLanController.DEV_NAME + "." + deviceOID));
             deviceData.put("devInterfaceMac", macAddress);
