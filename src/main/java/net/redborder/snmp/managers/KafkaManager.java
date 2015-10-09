@@ -63,6 +63,7 @@ public class KafkaManager extends Thread {
                     String directions[] = new String[]{"ingress", "egress"};
                     Map<String, Object> state = new HashMap<>();
                     Long time_now = System.currentTimeMillis() / 1000;
+                    time_now = time_now - (time_now%60);
                     Map<String, Object> enrichment = (Map<String, Object>) event.get("enrichment");
 
                     if (event.get("devClientCount") != null) {
