@@ -10,7 +10,12 @@ public class InterfacesFlowsDB {
         cache.put(interfaceOID, flows);
     }
 
-    public Map<String, Long> getFlows(String interfaceOID){
+    public void removeCache(String interfaceOID) {
+        if (cache.get(interfaceOID) != null)
+            cache.remove(interfaceOID);
+    }
+
+    public Map<String, Long> getFlows(String interfaceOID) {
         return cache.get(interfaceOID);
     }
 }

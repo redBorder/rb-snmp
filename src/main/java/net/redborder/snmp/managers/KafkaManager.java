@@ -68,7 +68,8 @@ public class KafkaManager extends Thread {
 
                     if (event.get("devClientCount") != null) {
                         state.put("wireless_station", event.get("devInterfaceMac"));
-                        state.put("wireless_station_name", event.get("devName"));
+                        if(event.get("devName") != null)
+                            state.put("wireless_station_name", event.get("devName"));
                         state.put("client_count", event.get("devClientCount"));
                         state.put("type", "snmp_apMonitor");
                         state.put("timestamp", time_now);
