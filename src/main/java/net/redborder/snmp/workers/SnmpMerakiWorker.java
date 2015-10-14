@@ -1,5 +1,6 @@
 package net.redborder.snmp.workers;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import net.redborder.snmp.tasks.SnmpTask;
 import net.redborder.snmp.util.InterfacesFlowsDB;
 import net.redborder.snmp.util.SnmpOID;
@@ -113,7 +114,7 @@ public class SnmpMerakiWorker extends Worker {
     }
 
     @Override
-    public SnmpTask getSnmpTask(){
+    public SnmpTask getSnmpTask() {
         return snmpTask;
     }
 
@@ -139,92 +140,104 @@ public class SnmpMerakiWorker extends Worker {
             Map<String, Object> interfaceData = new HashMap<>();
             Map<String, Long> interfaceFlows = new HashMap<>();
 
-            String ap = interfaceOID.substring(0, interfaceOID.lastIndexOf("."));
+            if (results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS + "." + interfaceOID) == null ||
+                    results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_PKTS + "." + interfaceOID) == null ||
+                    results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + interfaceOID) == null ||
+                    results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + interfaceOID) == null) {
+                cache.removeCache(interfaceOID);
+            } else {
 
-            interfaceData.put("interfaceOID", interfaceOID);
-            interfaceData.put("sensorIp", snmpTask.getIP());
-            interfaceData.put("enrichment", snmpTask.getEnrichment());
-            interfaceData.put("timeSwitched", pullingTime);
+                String ap = interfaceOID.substring(0, interfaceOID.lastIndexOf("."));
 
-            interfaceData.put("devName", results.get(SnmpOID.Meraki.DEV_NAME + "." + ap));
-            interfaceData.put("devStatus", parseStatus(results.get(SnmpOID.Meraki.DEV_STATUS + "." + ap)));
+                interfaceData.put("interfaceOID", interfaceOID);
+                interfaceData.put("sensorIp", snmpTask.getIP());
+                interfaceData.put("enrichment", snmpTask.getEnrichment());
+                interfaceData.put("timeSwitched", pullingTime);
 
-            String macAddress = results.get(SnmpOID.Meraki.DEV_INTERFACE_MAC + "." + interfaceOID);
-            if (totalBytes.get(macAddress) == null) totalBytes.put(macAddress, 0L);
+                interfaceData.put("devName", results.get(SnmpOID.Meraki.DEV_NAME + "." + ap));
+                interfaceData.put("devStatus", parseStatus(results.get(SnmpOID.Meraki.DEV_STATUS + "." + ap)));
 
-            if (!interfacesData.contains(macAddress)) {
-                interfaceData.put("devClientCount", results.get(SnmpOID.Meraki.DEV_CLIENT_COUNT + "." + ap));
+                String macAddress = results.get(SnmpOID.Meraki.DEV_INTERFACE_MAC + "." + interfaceOID);
+                if (totalBytes.get(macAddress) == null) totalBytes.put(macAddress, 0L);
+
+                if (!interfacesData.contains(macAddress)) {
+                    interfaceData.put("devClientCount", results.get(SnmpOID.Meraki.DEV_CLIENT_COUNT + "." + ap));
+                }
+
+                interfaceData.put("devInterfaceMac", macAddress);
+                interfaceData.put("devInterfaceName", results.get(SnmpOID.Meraki.DEV_INTERFACE_NAME + "." + interfaceOID));
+
+                if (!(interfaceData.get("devInterfaceName").toString().toLowerCase().contains("wired") ||
+                        interfaceData.get("devInterfaceName").toString().toLowerCase().contains("wifi"))) {
+                    interfaceData.put("validForStats", false);
+                } else {
+                    interfaceData.put("validForStats", true);
+                }
+
+                if (interfaceCache == null) {
+                    interfaceCache = new HashMap<>();
+                    interfaceData.put("validForStats", false);
+                    interfaceCache.put("devInterfaceSentPkts", 0L);
+                    interfaceCache.put("devInterfaceRecvPkts", 0L);
+                    interfaceCache.put("devInterfaceSentBytes", 0L);
+                    interfaceCache.put("devInterfaceRecvBytes", 0L);
+                }
+                Long devInterfaceSentPkts =
+                        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS + "." + interfaceOID));
+                Long devInterfaceSentPktsDiff = devInterfaceSentPkts - interfaceCache.get("devInterfaceSentPkts");
+                if (devInterfaceSentPktsDiff < 0) {
+                    devInterfaceSentPktsDiff =
+                            Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS + "." + interfaceOID)) +
+                                    MAX - interfaceCache.get("devInterfaceSentPkts");
+                }
+
+                Long devInterfaceRecvPkts =
+                        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_PKTS + "." + interfaceOID));
+                Long devInterfaceRecvPktsDiff = devInterfaceRecvPkts - interfaceCache.get("devInterfaceRecvPkts");
+                if (devInterfaceRecvPktsDiff < 0) {
+                    devInterfaceRecvPktsDiff =
+                            Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_PKTS + "." + interfaceOID)) +
+                                    MAX - interfaceCache.get("devInterfaceRecvPkts");
+                }
+
+                Long devInterfaceSentBytes =
+                        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + interfaceOID));
+                Long devInterfaceSentBytesDiff = devInterfaceSentBytes - interfaceCache.get("devInterfaceSentBytes");
+                if (devInterfaceSentBytesDiff < 0) {
+                    devInterfaceSentBytesDiff =
+                            Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + interfaceOID)) +
+                                    MAX - interfaceCache.get("devInterfaceSentBytes");
+                }
+
+                Long devInterfaceRecvBytes =
+                        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + interfaceOID));
+                Long devInterfaceRecvBytesDiff = devInterfaceRecvBytes - interfaceCache.get("devInterfaceRecvBytes");
+                if (devInterfaceRecvBytesDiff < 0) {
+                    devInterfaceRecvBytesDiff =
+                            Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + interfaceOID)) +
+                                    MAX - interfaceCache.get("devInterfaceRecvBytes");
+                }
+
+                totalBytes.put(macAddress, totalBytes.get(macAddress) + devInterfaceSentBytesDiff + devInterfaceRecvBytesDiff);
+
+                interfaceFlows.put("devInterfaceSentPkts", devInterfaceSentPktsDiff);
+                interfaceFlows.put("devInterfaceRecvPkts", devInterfaceRecvPktsDiff);
+                interfaceFlows.put("devInterfaceSentBytes", devInterfaceSentBytesDiff);
+                interfaceFlows.put("devInterfaceRecvBytes", devInterfaceRecvBytesDiff);
+
+                interfaceCache.put("devInterfaceSentPkts", devInterfaceSentPkts);
+                interfaceCache.put("devInterfaceRecvPkts", devInterfaceRecvPkts);
+                interfaceCache.put("devInterfaceSentBytes", devInterfaceSentBytes);
+                interfaceCache.put("devInterfaceRecvBytes", devInterfaceRecvBytes);
+
+                cache.addCache(interfaceOID, interfaceCache);
+
+                interfaceData.putAll(interfaceFlows);
+                interfacesData.add(interfaceData);
             }
-
-            interfaceData.put("devInterfaceMac", macAddress);
-            interfaceData.put("devInterfaceName", results.get(SnmpOID.Meraki.DEV_INTERFACE_NAME + "." + interfaceOID));
-
-            interfaceData.put("validForStats", true);
-
-            if (interfaceCache == null) {
-                interfaceCache = new HashMap<>();
-                interfaceData.put("validForStats", false);
-                interfaceCache.put("devInterfaceSentPkts", 0L);
-                interfaceCache.put("devInterfaceRecvPkts", 0L);
-                interfaceCache.put("devInterfaceSentBytes", 0L);
-                interfaceCache.put("devInterfaceRecvBytes", 0L);
-            }
-
-            Long devInterfaceSentPkts =
-                    Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS + "." + interfaceOID));
-            Long devInterfaceSentPktsDiff = devInterfaceSentPkts - interfaceCache.get("devInterfaceSentPkts");
-            if (devInterfaceSentPktsDiff < 0) {
-                devInterfaceSentPktsDiff =
-                        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS + "." + interfaceOID)) +
-                                MAX - interfaceCache.get("devInterfaceSentPkts");
-            }
-
-            Long devInterfaceRecvPkts =
-                    Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_PKTS + "." + interfaceOID));
-            Long devInterfaceRecvPktsDiff = devInterfaceRecvPkts - interfaceCache.get("devInterfaceRecvPkts");
-            if (devInterfaceRecvPktsDiff < 0) {
-                devInterfaceRecvPktsDiff =
-                        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_PKTS + "." + interfaceOID)) +
-                                MAX - interfaceCache.get("devInterfaceRecvPkts");
-            }
-
-            Long devInterfaceSentBytes =
-                    Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + interfaceOID));
-            Long devInterfaceSentBytesDiff = devInterfaceSentBytes - interfaceCache.get("devInterfaceSentBytes");
-            if (devInterfaceSentBytesDiff < 0) {
-                devInterfaceSentBytesDiff =
-                        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + interfaceOID)) +
-                                MAX - interfaceCache.get("devInterfaceSentBytes");
-            }
-
-            Long devInterfaceRecvBytes =
-                    Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + interfaceOID));
-            Long devInterfaceRecvBytesDiff = devInterfaceRecvBytes - interfaceCache.get("devInterfaceRecvBytes");
-            if (devInterfaceRecvBytesDiff < 0) {
-                devInterfaceRecvBytesDiff =
-                        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + interfaceOID)) +
-                                MAX - interfaceCache.get("devInterfaceRecvBytes");
-            }
-
-            totalBytes.put(macAddress, totalBytes.get(macAddress) + devInterfaceSentBytesDiff + devInterfaceRecvBytesDiff);
-
-            interfaceFlows.put("devInterfaceSentPkts", devInterfaceSentPktsDiff);
-            interfaceFlows.put("devInterfaceRecvPkts", devInterfaceRecvPktsDiff);
-            interfaceFlows.put("devInterfaceSentBytes", devInterfaceSentBytesDiff);
-            interfaceFlows.put("devInterfaceRecvBytes", devInterfaceRecvBytesDiff);
-
-            interfaceCache.put("devInterfaceSentPkts", devInterfaceSentPkts);
-            interfaceCache.put("devInterfaceRecvPkts", devInterfaceRecvPkts);
-            interfaceCache.put("devInterfaceSentBytes", devInterfaceSentBytes);
-            interfaceCache.put("devInterfaceRecvBytes", devInterfaceRecvBytes);
-
-            cache.addCache(interfaceOID, interfaceCache);
-
-            interfaceData.putAll(interfaceFlows);
-            interfacesData.add(interfaceData);
         }
 
-        for (Map.Entry<String, Long> entry : totalBytes.entrySet()){
+        for (Map.Entry<String, Long> entry : totalBytes.entrySet()) {
             log.trace("AP: {}, Bytes: {} Mbs", entry.getKey(), entry.getValue() / 1024 / 1024);
         }
 
