@@ -100,7 +100,6 @@ public class KafkaManager extends Thread {
                                 directionStats.put("first_switched", time_now - (Long) event.get("timeSwitched"));
                                 directionStats.put("wireless_station", event.get("devInterfaceMac"));
                                 directionStats.put("interface_name", event.get("devInterfaceName"));
-                                directionStats.put("wireless_station_name", event.get("devName"));
                                 directionStats.put("device_category", "stations");
                                 directionStats.put("type", "snmp-stats");
                                 directionStats.put("sensor_ip", event.get("sensorIp"));
