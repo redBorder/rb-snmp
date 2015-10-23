@@ -17,7 +17,7 @@ public class SnmpManager extends Thread implements TasksChangedListener {
     private static final Logger log = LoggerFactory.getLogger(KafkaManager.class);
 
     private List<SnmpTask> tasks = new ArrayList<>();
-    private List<String> workersUuids = new ArrayList<>();
+    private List<String> currentTasksUUIDs = new ArrayList<>();
     private LinkedBlockingQueue<Map<String, Object>> queue;
     private Map<String, Worker> workers = new HashMap<>();
     private Object run = new Object();
@@ -39,9 +39,10 @@ public class SnmpManager extends Thread implements TasksChangedListener {
                 }
 
                 for (SnmpTask task : tasks){
-                    String uuid = task.getIP() + "_" + task.getCommunity();
-                    workersUuids.add(uuid);
+                    String uuid = task.getUUID();
+                    currentTasksUUIDs.add(uuid);
                     if (!workers.containsKey(uuid)) {
+                        log.info("Starting {}", uuid);
 
                         if(task.getType().toUpperCase().equals("MERAKI")){
                             SnmpMerakiWorker worker = new SnmpMerakiWorker(task, queue);
@@ -55,22 +56,26 @@ public class SnmpManager extends Thread implements TasksChangedListener {
                     }
                 }
 
-                for (String workerUuid : workers.keySet()) {
-                    if (!workersUuids.contains(workerUuid)) {
-                        workers.get(workerUuid).shutdown();
-                        workers.remove(workerUuid);
+                List<String> keys = Arrays.asList(workers.keySet().toArray(new String[workers.size()]));
+
+                for (String workerUuid : keys) {
+                    if (!currentTasksUUIDs.contains(workerUuid)) {
+                        log.info("Removing {}", workerUuid);
+                        Worker worker = workers.remove(workerUuid);
+                        worker.shutdown();
                     }
                 }
 
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
 
             List<String> runningTask = new ArrayList<>();
             for(Worker worker : workers.values()){
-                runningTask.add(worker.getSnmpTask().getIP() + ":" + worker.getSnmpTask().getCommunity());
+                runningTask.add(worker.getSnmpTask().getUUID());
             }
 
+            currentTasksUUIDs.clear();
             log.info("Running task: {} ", runningTask);
         }
 
@@ -89,6 +94,8 @@ public class SnmpManager extends Thread implements TasksChangedListener {
 
     @Override
     public void updateTasks(List<Task> list) {
+        log.info("Update {} tasks", list.size());
+        tasks.clear();
         for (Task t : list) {
             SnmpTask snmpTask = new SnmpTask(t.asMap());
             tasks.add(snmpTask);

@@ -39,6 +39,7 @@ public class SnmpServer {
         log.info("SnmpServer is started!");
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
+                log.info("Starting shutdown ...");
                 kafkaManager.shutdown();
                 snmpManager.shutdown();
             }
@@ -47,9 +48,11 @@ public class SnmpServer {
         Signal.handle(new Signal("HUP"), new SignalHandler() {
             public void handle(Signal signal) {
                 try {
+                    log.info("Starting reload ...");
                     configuration.readConfiguration();
                     zkTasksHandler.setTasks(configuration.getSnmpTasks());
                     zkTasksHandler.wakeup();
+                    log.info("Reload end!");
 
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
