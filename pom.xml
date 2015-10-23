@@ -4,11 +4,11 @@
 
     <groupId>net.redborder</groupId>
     <artifactId>rb-snmp</artifactId>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.5</version>
 
     <scm>
         <developerConnection>scm:git:git@gitlab.redborder.lan:bigdata/rb-snmp.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>rb-snmp-1.0.5</tag>
     </scm>
 
     <repositories>
