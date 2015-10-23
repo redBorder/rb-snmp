@@ -62,4 +62,8 @@ public class SnmpTask extends MappedTask {
     public Map<String, Object> getEnrichment() {
         return getData("enrichment");
     }
+
+    public String getUUID(){
+        return getIP() + getCommunity() + getPullingTime() + getEnrichment();
+    }
 }
