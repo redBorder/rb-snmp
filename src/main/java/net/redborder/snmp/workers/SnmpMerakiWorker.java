@@ -250,7 +250,9 @@ public class SnmpMerakiWorker extends Worker {
 
     public String parseStatus(String status) {
         String parsedStatus;
-        if (status.equals("1"))
+        if (status == null)
+            parsedStatus = "off";
+        else if (status.equals("1"))
             parsedStatus = "on";
         else
             parsedStatus = "off";
