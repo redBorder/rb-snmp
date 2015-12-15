@@ -63,48 +63,61 @@ public class SnmpMerakiWorker extends Worker {
                 DefaultPDUFactory defaultPDUFactory = new DefaultPDUFactory();
                 TreeUtils treeUtils = new TreeUtils(snmp, defaultPDUFactory);
                 List<TreeEvent> events = new ArrayList<>();
+                Boolean errorResponse = false;
 
                 for (OID oid : SnmpOID.Meraki.toList()) {
-                    events.addAll(treeUtils.getSubtree(target, oid));
+                    List<TreeEvent> singleEvents = treeUtils.getSubtree(target, oid);
+                    for (TreeEvent singleEvent : singleEvents) {
+                        errorResponse = singleEvent.isError();
+                        if (errorResponse)
+                            break;
+                    }
+                    if (errorResponse) {
+                        break;
+                    } else {
+                        events.addAll(singleEvents);
+                    }
                 }
+                if (!errorResponse) {
+                    log.info("Getting from SNMP: {}  - content: {}", snmpTask.getIP(), !events.isEmpty());
 
-                log.info("Getting from SNMP: {}  - content: {}", snmpTask.getIP(), !events.isEmpty());
+                    Map<String, String> results = new HashMap<>();
 
-                Map<String, String> results = new HashMap<>();
+                    // Get snmpwalk result.
+                    for (TreeEvent event : events) {
+                        if (event != null) {
+                            if (!event.isError()) {
+                                VariableBinding[] varBindings = event.getVariableBindings();
 
-                // Get snmpwalk result.
-                for (TreeEvent event : events) {
-                    if (event != null) {
-                        if (!event.isError()) {
-                            VariableBinding[] varBindings = event.getVariableBindings();
-
-                            for (VariableBinding varBinding : varBindings) {
-                                results.put(varBinding.getOid().toString(), varBinding.getVariable().toString());
+                                for (VariableBinding varBinding : varBindings) {
+                                    results.put(varBinding.getOid().toString(), varBinding.getVariable().toString());
+                                }
+                            } else {
+                                // TODO
                             }
                         } else {
                             // TODO
                         }
-                    } else {
-                        // TODO
                     }
-                }
 
-                List<String> interfacesOIDs = getInterfacesOIDs(results);
-                List<Map<String, Object>> interfacesData = getInterfacesData(results, interfacesOIDs);
+                    List<String> interfacesOIDs = getInterfacesOIDs(results);
+                    List<Map<String, Object>> interfacesData = getInterfacesData(results, interfacesOIDs);
 
-                log.info("SNMP accesPointsInterfaces from {} count: {}", snmpTask.getIP(), interfacesData.size());
-                log.info("SNMP response in {} ms.", (System.currentTimeMillis() - start));
+                    log.info("SNMP accesPointsInterfaces from {} count: {}", snmpTask.getIP(), interfacesData.size());
+                    log.info("SNMP response in {} ms.", (System.currentTimeMillis() - start));
 
-                try {
-                    for (Map<String, Object> interfaceData : interfacesData) {
-                        queue.put(interfaceData);
+                    try {
+                        for (Map<String, Object> interfaceData : interfacesData) {
+                            queue.put(interfaceData);
+                        }
+                        TimeUnit.SECONDS.sleep(pullingTime);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                    TimeUnit.SECONDS.sleep(pullingTime);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                } else {
+                    log.warn("No response from host: {}, community: {}", snmpTask.getIP(), snmpTask.getCommunity());
                 }
             }
-
             snmp.close();
             transport.close();
         } catch (IOException e) {
