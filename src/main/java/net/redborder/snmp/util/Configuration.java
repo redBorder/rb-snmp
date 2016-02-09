@@ -4,6 +4,8 @@ package net.redborder.snmp.util;
 import net.redborder.clusterizer.Task;
 import net.redborder.snmp.tasks.SnmpTask;
 import org.ho.yaml.Yaml;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snmp4j.Snmp;
 
 import java.io.File;
@@ -13,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 
 public class Configuration {
+    final Logger log = LoggerFactory.getLogger(Configuration.class);
+
     private final String CONFIG_FILE_PATH = "/opt/rb/etc/rb-snmp/config.yml";
     private Map<String, Object> general;
     private List<Map<String, Object>> sensors;
@@ -34,6 +38,8 @@ public class Configuration {
         Map<String, Object> map = (Map<String, Object>) Yaml.load(new File(CONFIG_FILE_PATH));
         general = (Map<String, Object>) map.get("general");
         sensors = (List<Map<String, Object>>) map.get("sensors");
+
+        log.info("CONFIG[{}]", map);
 
         if (sensors != null) {
             for (Map<String, Object> sensor : sensors) {
