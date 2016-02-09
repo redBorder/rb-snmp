@@ -43,6 +43,7 @@ public class Configuration {
 
         if (sensors != null) {
             for (Map<String, Object> sensor : sensors) {
+                log.info(" - Sensor: " + sensor.toString());
                 String type = (String) sensor.get("type");
                 if (!type.toUpperCase().equals("MERAKI") || !type.toUpperCase().equals("WLC")) {
                     SnmpTask snmpTask = new SnmpTask();
@@ -60,6 +61,10 @@ public class Configuration {
         } else {
             sensors = new ArrayList<>();
         }
+
+
+        log.info("SENSORS[{}]", sensors);
+
     }
 
     public List<Task> getSnmpTasks() {
