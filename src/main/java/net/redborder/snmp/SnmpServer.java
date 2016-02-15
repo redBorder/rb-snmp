@@ -1,5 +1,6 @@
 package net.redborder.snmp;
 
+import net.redborder.clusterizer.Task;
 import net.redborder.clusterizer.ZkTasksHandler;
 import net.redborder.snmp.managers.KafkaManager;
 import net.redborder.snmp.managers.SnmpManager;
@@ -10,6 +11,7 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 import java.io.FileNotFoundException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +52,14 @@ public class SnmpServer {
                 try {
                     log.info("Starting reload ...");
                     configuration.readConfiguration();
-                    zkTasksHandler.setTasks(configuration.getSnmpTasks());
+                    List<Task> tasks = configuration.getSnmpTasks();
+
+                    log.info("TASKS: ");
+                    for (Task t : tasks) {
+                        log.info("  - {}", t.asMap());
+                    }
+
+                    zkTasksHandler.setTasks(tasks);
                     zkTasksHandler.wakeup();
                     log.info("Reload end!");
 
