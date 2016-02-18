@@ -60,10 +60,6 @@ public class Configuration {
         } else {
             sensors = new ArrayList<>();
         }
-
-
-        log.info("SENSORS[{}]", sensors);
-
     }
 
     public List<Task> getSnmpTasks() {

@@ -1,5 +1,6 @@
 package net.redborder.snmp;
 
+import net.redborder.clusterizer.RecoverFromFailed;
 import net.redborder.clusterizer.Task;
 import net.redborder.clusterizer.ZkTasksHandler;
 import net.redborder.snmp.managers.KafkaManager;
@@ -26,6 +27,20 @@ public class SnmpServer {
         String zkPath = configuration.getFromGeneral(Configuration.Dimensions.ZKPATH);
         final ZkTasksHandler zkTasksHandler = new ZkTasksHandler(zkConnect, zkPath);
 
+        RecoverFromFailed recoverFromFailed = new RecoverFromFailed() {
+            @Override
+            public List<Task> recover() {
+                try {
+                    configuration.readConfiguration();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                return configuration.getSnmpTasks();
+            }
+        };
+
+        zkTasksHandler.setRecoverFromFailed(recoverFromFailed);
+
         LinkedBlockingQueue<Map<String, Object>> queue = new LinkedBlockingQueue<>();
         final SnmpManager snmpManager = new SnmpManager(queue);
         final KafkaManager kafkaManager = new KafkaManager(queue);
@@ -37,6 +52,7 @@ public class SnmpServer {
         snmpManager.start();
 
         zkTasksHandler.setTasks(configuration.getSnmpTasks());
+        zkTasksHandler.wakeup();
 
         log.info("SnmpServer is started!");
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -53,12 +69,6 @@ public class SnmpServer {
                     log.info("Starting reload ...");
                     configuration.readConfiguration();
                     List<Task> tasks = configuration.getSnmpTasks();
-
-                    log.info("TASKS: ");
-                    for (Task t : tasks) {
-                        log.info("  - {}", t.asMap());
-                    }
-
                     zkTasksHandler.setTasks(tasks);
                     zkTasksHandler.wakeup();
                     log.info("Reload end!");
