@@ -102,6 +102,7 @@ public class KafkaManager extends Thread {
                                 directionStats.put("interface_name", event.get("devInterfaceName"));
                                 directionStats.put("device_category", "stations");
                                 directionStats.put("type", "snmp-stats");
+                                directionStats.put("dot11_status", "ASSOCIATED");
                                 directionStats.put("sensor_ip", event.get("sensorIp"));
                                 directionStats.putAll(enrichment);
 
