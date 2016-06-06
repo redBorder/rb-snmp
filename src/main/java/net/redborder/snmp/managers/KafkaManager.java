@@ -80,7 +80,7 @@ public class KafkaManager extends Thread {
                         // Data for Load Utilization (Channel 2.4)
                         if (event.get("dev24LoadChannelUtilization") != null) {
                             Map<String, Object> state24 = new HashMap<>();
-                            state24.put("type", "channel_2.4");
+                            state24.put("type", "channel_load_2_4");
                             state24.put("wireless_station", event.get("devInterfaceMac"));
                             state24.put("timestamp", time_now);
                             state24.put("value", Integer.valueOf((String) event.get("dev24LoadChannelUtilization")));
@@ -91,7 +91,7 @@ public class KafkaManager extends Thread {
                         // Data for Load Utilization (Channel 5)
                         if (event.get("dev5LoadChannelUtilization") != null) {
                             Map<String, Object> state5 = new HashMap<>();
-                            state5.put("type", "channel_5");
+                            state5.put("type", "channel_load_5");
                             state5.put("wireless_station", event.get("devInterfaceMac"));
                             state5.put("timestamp", time_now);
                             state5.put("value", Integer.valueOf((String) event.get("dev5LoadChannelUtilization")));
