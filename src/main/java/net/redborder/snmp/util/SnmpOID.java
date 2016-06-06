@@ -34,7 +34,7 @@ public class SnmpOID {
 
         public static List<OID> toList() {
             return Arrays.asList(new OID[]{
-                    DEV_MAC, DEV_NAME, DEV_CLIENTS_COUNT
+                    DEV_MAC, DEV_NAME, DEV_CLIENTS_COUNT, DEV_LOAD_CHANNEL_UTILIZATION
             });
         }
     }

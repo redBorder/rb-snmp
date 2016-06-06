@@ -125,7 +125,7 @@ public class SnmpWLCWorker extends Worker {
     }
 
     @Override
-    public SnmpTask getSnmpTask(){
+    public SnmpTask getSnmpTask() {
         return snmpTask;
     }
 
@@ -155,7 +155,6 @@ public class SnmpWLCWorker extends Worker {
                     results.get(SnmpOID.WirelessLanController.DEV_LOAD_CHANNEL_UTILIZATION + "." + deviceOID + ".0"));
             deviceData.put("dev5LoadChannelUtilization",
                     results.get(SnmpOID.WirelessLanController.DEV_LOAD_CHANNEL_UTILIZATION + "." + deviceOID + ".1"));
-
 
             devicesData.add(deviceData);
         }

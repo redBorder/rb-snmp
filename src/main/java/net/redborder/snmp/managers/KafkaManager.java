@@ -83,7 +83,7 @@ public class KafkaManager extends Thread {
                             state24.put("type", "channel_2.4");
                             state24.put("wireless_station", event.get("devInterfaceMac"));
                             state24.put("timestamp", time_now);
-                            state24.put("value", event.get("dev24LoadChannelUtilization"));
+                            state24.put("value", Integer.valueOf((String) event.get("dev24LoadChannelUtilization")));
                             state24.putAll(enrichment);
                             send("rb_state", (String) event.get("devInterfaceMac"), state24);
                         }
@@ -94,7 +94,7 @@ public class KafkaManager extends Thread {
                             state5.put("type", "channel_5");
                             state5.put("wireless_station", event.get("devInterfaceMac"));
                             state5.put("timestamp", time_now);
-                            state5.put("value", event.get("dev24LoadChannelUtilization"));
+                            state5.put("value", Integer.valueOf((String) event.get("dev5LoadChannelUtilization")));
                             state5.putAll(enrichment);
                             send("rb_state", (String) event.get("devInterfaceMac"), state5);
                         }
