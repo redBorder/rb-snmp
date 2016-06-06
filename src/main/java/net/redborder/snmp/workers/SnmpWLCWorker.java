@@ -149,6 +149,14 @@ public class SnmpWLCWorker extends Worker {
             deviceData.put("devClientCount",
                     results.get(SnmpOID.WirelessLanController.DEV_CLIENTS_COUNT + "." + deviceOID));
             deviceData.put("devStatus", "on");
+
+            // Data for Channel Utilization
+            deviceData.put("dev24LoadChannelUtilization",
+                    results.get(SnmpOID.WirelessLanController.DEV_LOAD_CHANNEL_UTILIZATION + "." + deviceOID + ".0"));
+            deviceData.put("dev5LoadChannelUtilization",
+                    results.get(SnmpOID.WirelessLanController.DEV_LOAD_CHANNEL_UTILIZATION + "." + deviceOID + ".1"));
+
+
             devicesData.add(deviceData);
         }
         return devicesData;
