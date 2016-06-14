@@ -79,11 +79,7 @@ public class SnmpWLCWorker extends Worker {
                             for (VariableBinding varBinding : varBindings) {
                                 results.put(varBinding.getOid().toString(), varBinding.getVariable().toString());
                             }
-                        } else {
-                            // TODO
                         }
-                    } else {
-                        // TODO
                     }
                 }
 
@@ -143,7 +139,7 @@ public class SnmpWLCWorker extends Worker {
             deviceData.put("sensorIp", snmpTask.getIP());
             deviceData.put("enrichment", snmpTask.getEnrichment());
             deviceData.put("timeSwitched", split);
-
+            deviceData.put("type", "ap-stats");
             deviceData.put("devName", results.get(SnmpOID.WirelessLanController.DEV_NAME + "." + deviceOID));
             deviceData.put("devInterfaceMac", macAddress);
             deviceData.put("devClientCount",
