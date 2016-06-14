@@ -77,6 +77,28 @@ public class KafkaManager extends Thread {
                         state.put("sensor_ip", event.get("sensorIp"));
                         state.putAll(enrichment);
 
+                        // Data for Load Utilization (Channel 2.4)
+                        if (event.get("dev24LoadChannelUtilization") != null) {
+                            Map<String, Object> state24 = new HashMap<>();
+                            state24.put("type", "channel_load_2_4");
+                            state24.put("wireless_station", event.get("devInterfaceMac"));
+                            state24.put("timestamp", time_now);
+                            state24.put("value", Integer.valueOf((String) event.get("dev24LoadChannelUtilization")));
+                            state24.putAll(enrichment);
+                            send("rb_state", (String) event.get("devInterfaceMac"), state24);
+                        }
+
+                        // Data for Load Utilization (Channel 5)
+                        if (event.get("dev5LoadChannelUtilization") != null) {
+                            Map<String, Object> state5 = new HashMap<>();
+                            state5.put("type", "channel_load_5");
+                            state5.put("wireless_station", event.get("devInterfaceMac"));
+                            state5.put("timestamp", time_now);
+                            state5.put("value", Integer.valueOf((String) event.get("dev5LoadChannelUtilization")));
+                            state5.putAll(enrichment);
+                            send("rb_state", (String) event.get("devInterfaceMac"), state5);
+                        }
+
                         send("rb_state", (String) event.get("devInterfaceMac"), state);
                     }
 

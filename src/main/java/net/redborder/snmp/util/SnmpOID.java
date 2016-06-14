@@ -30,11 +30,11 @@ public class SnmpOID {
         public static final OID DEV_MAC = new OID("1.3.6.1.4.1.9.9.513.1.2.3.1.1");
         public static final OID DEV_NAME = new OID("1.3.6.1.4.1.9.9.513.1.1.1.1.5");
         public static final OID DEV_CLIENTS_COUNT = new OID("1.3.6.1.4.1.9.9.513.1.1.1.1.54");
-        public static final OID AP_CHANNEL = new OID("1.3.6.1.4.1.14179.2.2.13.1.3");
+        public static final OID DEV_LOAD_CHANNEL_UTILIZATION = new OID("1.3.6.1.4.1.14179.2.2.13.1.3");
 
         public static List<OID> toList() {
             return Arrays.asList(new OID[]{
-                    DEV_MAC, DEV_NAME, DEV_CLIENTS_COUNT, AP_CHANNEL
+                    DEV_MAC, DEV_NAME, DEV_CLIENTS_COUNT, DEV_LOAD_CHANNEL_UTILIZATION
             });
         }
     }
