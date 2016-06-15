@@ -131,7 +131,7 @@ public class SnmpRuckusWorker extends Worker {
         List<String> devicesMacAddress = new ArrayList<>();
 
         for (String deviceOID : devicesOIDs) {
-            String macAddress = results.get(SnmpOID.WirelessLanController.DEV_MAC + "." + deviceOID);
+            String macAddress = results.get(SnmpOID.Ruckus.DEV_MAC + "." + deviceOID);
             devicesMacAddress.add(macAddress);
             Map<String, Object> deviceData = new HashMap<>();
 
