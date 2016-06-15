@@ -44,7 +44,7 @@ public class Configuration {
         if (sensors != null) {
             for (Map<String, Object> sensor : sensors) {
                 String type = (String) sensor.get("type");
-                if (type.toUpperCase().equals("MERAKI") || type.toUpperCase().equals("WLC")) {
+                if (type.toUpperCase().equals("MERAKI") || type.toUpperCase().equals("WLC") || type.toUpperCase().equals("RUCKUS")) {
                     SnmpTask snmpTask = new SnmpTask();
 
                     snmpTask.setType(type);
