@@ -28,6 +28,7 @@ public class SnmpOID {
 
     public static class Ruckus {
         public static final OID DEV_NAME = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.10");
+        public static final OID DEV_MAC = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.1");
         public static final OID DEV_STATUS = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.3");
         public static final OID DEV_CLIENT_COUNT = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.15");
 
