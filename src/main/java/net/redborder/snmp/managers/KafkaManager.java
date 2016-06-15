@@ -63,12 +63,12 @@ public class KafkaManager extends Thread {
                     String directions[] = new String[]{"ingress", "egress"};
                     Map<String, Object> state = new HashMap<>();
                     Long time_now = System.currentTimeMillis() / 1000;
-                    time_now = time_now - (time_now%60);
+                    time_now = time_now - (time_now % 60);
                     Map<String, Object> enrichment = (Map<String, Object>) event.get("enrichment");
 
                     if (event.get("devClientCount") != null) {
                         state.put("wireless_station", event.get("devInterfaceMac"));
-                        if(event.get("devName") != null)
+                        if (event.get("devName") != null)
                             state.put("wireless_station_name", event.get("devName"));
                         state.put("client_count", event.get("devClientCount"));
                         state.put("type", "snmp_apMonitor");
@@ -111,17 +111,20 @@ public class KafkaManager extends Thread {
                                 bytes = (Long) event.get("devInterfaceRecvBytes");
                                 pkts = (Long) event.get("devInterfaceRecvPkts");
                             }
-                            if (bytes < 0 || pkts < 0) {
+                            if ((bytes != null && bytes < 0) || (pkts != null && pkts < 0)) {
                                 log.warn("Flow's lower than 0!. Sensor: {}, AP: {}, Bytes: {}, Pkts: {}",
                                         event.get("sensor_ip"), event.get("devInterfaceMac"), bytes, pkts);
                             } else {
-                                directionStats.put("bytes", bytes);
-                                directionStats.put("pkts", pkts);
+                                if (bytes != null) directionStats.put("bytes", bytes);
+                                if (pkts != null) directionStats.put("pkts", pkts);
                                 directionStats.put("direction", direction);
                                 directionStats.put("timestamp", time_now);
                                 directionStats.put("first_switched", time_now - (Long) event.get("timeSwitched"));
                                 directionStats.put("wireless_station", event.get("devInterfaceMac"));
-                                directionStats.put("interface_name", event.get("devInterfaceName"));
+
+                                Object interfaceName = event.get("devInterfaceName");
+                                if (interfaceName != null) directionStats.put("interface_name", interfaceName);
+
                                 directionStats.put("device_category", "stations");
                                 directionStats.put("type", "snmp-stats");
                                 directionStats.put("dot11_status", "ASSOCIATED");

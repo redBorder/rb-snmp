@@ -1,6 +1,7 @@
 package net.redborder.snmp.workers;
 
 import net.redborder.snmp.tasks.SnmpTask;
+import net.redborder.snmp.util.InterfacesFlowsDB;
 import net.redborder.snmp.util.SnmpOID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,8 @@ public class SnmpRuckusWorker extends Worker {
 
     final Logger log = LoggerFactory.getLogger(SnmpMerakiWorker.class);
     SnmpTask snmpTask;
+    InterfacesFlowsDB cache = new InterfacesFlowsDB();
+
     LinkedBlockingQueue<Map<String, Object>> queue;
     Long pullingTime;
     volatile AtomicBoolean running = new AtomicBoolean(false);
@@ -134,23 +137,41 @@ public class SnmpRuckusWorker extends Worker {
             String macAddress = results.get(SnmpOID.Ruckus.DEV_MAC + "." + deviceOID);
             devicesMacAddress.add(macAddress);
             Map<String, Object> deviceData = new HashMap<>();
+            String mac = results.get(SnmpOID.Ruckus.DEV_NAME + "." + deviceOID);
 
-            deviceData.put("validForStats", true);
+            Map<String, Long> data = cache.getFlows(mac);
+
+            Long sendData = Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_SENT_DATA + "." + deviceOID)) * 1024L;
+            Long recvData = Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_RECV_DATA + "." + deviceOID)) * 1024L;
+
+            if (data == null) {
+                Map<String, Long> newData = new HashMap<>();
+                newData.put("devInterfaceSentBytes", sendData);
+                newData.put("devInterfaceRecvBytes", recvData);
+                deviceData.put("validForStats", false);
+                cache.addCache(mac, newData);
+            } else {
+                deviceData.put("validForStats", true);
+                deviceData.put("devInterfaceSentBytes", sendData - data.get("devInterfaceSentBytes"));
+                deviceData.put("devInterfaceRecvBytes", recvData - data.get("devInterfaceRecvBytes"));
+
+                Map<String, Long> newData = new HashMap<>();
+                newData.put("devInterfaceSentBytes", sendData);
+                newData.put("devInterfaceRecvBytes", recvData);
+                cache.addCache(mac, newData);
+            }
+
             deviceData.put("sensorIp", snmpTask.getIP());
             deviceData.put("enrichment", snmpTask.getEnrichment());
             deviceData.put("timeSwitched", split);
             deviceData.put("type", "ap-stats");
-            deviceData.put("devName", results.get(SnmpOID.Ruckus.DEV_NAME + "." + deviceOID));
+            deviceData.put("devName", mac);
             deviceData.put("devInterfaceMac", macAddress);
             deviceData.put("devClientCount",
                     results.get(SnmpOID.Ruckus.DEV_CLIENT_COUNT + "." + deviceOID));
 
             deviceData.put("devStatus", parseStatus(results.get(SnmpOID.Ruckus.DEV_STATUS + "." + deviceOID)));
 
-            deviceData.put("devInterfaceSentBytes",
-                    ((Long) (Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_SENT_DATA + "." + deviceOID)) * 1024L)));
-            deviceData.put("devInterfaceRecvBytes",
-                    ((Long) (Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_RECV_DATA + "." + deviceOID)) * 1024L)));
 
             devicesData.add(deviceData);
         }

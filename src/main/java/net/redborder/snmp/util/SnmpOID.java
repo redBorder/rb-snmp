@@ -19,10 +19,8 @@ public class SnmpOID {
         public static final OID DEV_INTERFACE_RECV_BYTES = new OID("1.3.6.1.4.1.29671.1.1.5.1.7");
 
         public static List<OID> toList() {
-            return Arrays.asList(new OID[]{
-                    DEV_INTERFACE_MAC, DEV_INTERFACE_NAME, DEV_NAME, DEV_STATUS, DEV_CLIENT_COUNT,
-                    DEV_INTERFACE_RECV_BYTES, DEV_INTERFACE_SENT_BYTES, DEV_INTERFACE_SENT_PKTS, DEV_INTERFACE_RECV_PKTS
-            });
+            return Arrays.asList(DEV_INTERFACE_MAC, DEV_INTERFACE_NAME, DEV_NAME, DEV_STATUS, DEV_CLIENT_COUNT,
+                    DEV_INTERFACE_RECV_BYTES, DEV_INTERFACE_SENT_BYTES, DEV_INTERFACE_SENT_PKTS, DEV_INTERFACE_RECV_PKTS);
         }
     }
 
@@ -36,9 +34,7 @@ public class SnmpOID {
         public static final OID DEV_CLIENT_RECV_DATA = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.62");
 
         public static List<OID> toList() {
-            return Arrays.asList(new OID[]{
-                    DEV_NAME, DEV_STATUS, DEV_CLIENT_COUNT, DEV_CLIENT_SENT_DATA, DEV_CLIENT_RECV_DATA
-            });
+            return Arrays.asList(DEV_NAME,DEV_MAC, DEV_STATUS, DEV_CLIENT_COUNT, DEV_CLIENT_SENT_DATA, DEV_CLIENT_RECV_DATA);
         }
     }
 
@@ -49,9 +45,7 @@ public class SnmpOID {
         public static final OID DEV_LOAD_CHANNEL_UTILIZATION = new OID("1.3.6.1.4.1.14179.2.2.13.1.3");
 
         public static List<OID> toList() {
-            return Arrays.asList(new OID[]{
-                    DEV_MAC, DEV_NAME, DEV_CLIENTS_COUNT, DEV_LOAD_CHANNEL_UTILIZATION
-            });
+            return Arrays.asList(DEV_MAC, DEV_NAME, DEV_CLIENTS_COUNT, DEV_LOAD_CHANNEL_UTILIZATION);
         }
     }
 }
