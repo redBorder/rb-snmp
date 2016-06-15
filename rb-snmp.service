@@ -1,0 +1,11 @@
+[Unit]
+Description=send system metrics to redborder monitor module using snmp
+
+[Service]
+ExecStart='java -cp /etc/rb-snmp:/usr/lib/rb-snmp/rb-snmp.jar net.redborder.snmp.SnmpServer'
+Restart=always
+User=rb-snmp
+Group=rb-snmp
+
+[Install]
+WantedBy=multi-user.target
