@@ -148,9 +148,9 @@ public class SnmpRuckusWorker extends Worker {
             deviceData.put("devStatus", parseStatus(results.get(SnmpOID.Ruckus.DEV_STATUS + "." + deviceOID)));
 
             deviceData.put("devInterfaceSentBytes",
-                    ((Long) (Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_SENT_DATA + "." + deviceOID)) * 1024L)).toString());
+                    ((Long) (Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_SENT_DATA + "." + deviceOID)) * 1024L)));
             deviceData.put("devInterfaceRecvBytes",
-                    ((Long) (Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_RECV_DATA + "." + deviceOID)) * 1024L)).toString());
+                    ((Long) (Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_RECV_DATA + "." + deviceOID)) * 1024L)));
 
             devicesData.add(deviceData);
         }
