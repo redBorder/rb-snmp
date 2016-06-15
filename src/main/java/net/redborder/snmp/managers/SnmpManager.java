@@ -4,6 +4,7 @@ import net.redborder.clusterizer.Task;
 import net.redborder.clusterizer.TasksChangedListener;
 import net.redborder.snmp.workers.SnmpMerakiWorker;
 import net.redborder.snmp.tasks.SnmpTask;
+import net.redborder.snmp.workers.SnmpRuckusWorker;
 import net.redborder.snmp.workers.SnmpWLCWorker;
 import net.redborder.snmp.workers.Worker;
 import org.slf4j.Logger;
@@ -46,6 +47,10 @@ public class SnmpManager extends Thread implements TasksChangedListener {
 
                         if(task.getType().toUpperCase().equals("MERAKI")){
                             SnmpMerakiWorker worker = new SnmpMerakiWorker(task, queue);
+                            workers.put(uuid, worker);
+                            worker.start();
+                        } else if (task.getType().toUpperCase().equals("RUCKUS")) {
+                            SnmpRuckusWorker worker = new SnmpRuckusWorker(task, queue);
                             workers.put(uuid, worker);
                             worker.start();
                         } else {

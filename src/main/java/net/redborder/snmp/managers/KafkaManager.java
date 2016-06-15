@@ -108,8 +108,8 @@ public class KafkaManager extends Thread {
                             Long bytes = (Long) event.get("devInterfaceSentBytes");
                             Long pkts = (Long) event.get("devInterfaceSentPkts");
                             if (direction.equals("ingress")) {
-                                bytes = (Long) event.get("devInterfaceSentPkts");
-                                pkts = (Long) event.get("devInterfaceSentBytes");
+                                bytes = (Long) event.get("devInterfaceRecvBytes");
+                                pkts = (Long) event.get("devInterfaceRecvPkts");
                             }
                             if (bytes < 0 || pkts < 0) {
                                 log.warn("Flow's lower than 0!. Sensor: {}, AP: {}, Bytes: {}, Pkts: {}",

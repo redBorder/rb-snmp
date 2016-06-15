@@ -26,6 +26,21 @@ public class SnmpOID {
         }
     }
 
+    public static class Ruckus {
+        public static final OID DEV_NAME = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.10");
+        public static final OID DEV_STATUS = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.3");
+        public static final OID DEV_CLIENT_COUNT = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.15");
+
+        public static final OID DEV_CLIENT_SENT_DATA = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.61");
+        public static final OID DEV_CLIENT_RECV_DATA = new OID("1.3.6.1.4.1.25053.1.2.2.1.1.2.1.1.62");
+
+        public static List<OID> toList() {
+            return Arrays.asList(new OID[]{
+                    DEV_NAME, DEV_STATUS, DEV_CLIENT_COUNT, DEV_CLIENT_SENT_DATA, DEV_CLIENT_RECV_DATA
+            });
+        }
+    }
+
     public static class WirelessLanController {
         public static final OID DEV_MAC = new OID("1.3.6.1.4.1.9.9.513.1.2.3.1.1");
         public static final OID DEV_NAME = new OID("1.3.6.1.4.1.9.9.513.1.1.1.1.5");
