@@ -48,4 +48,12 @@ public class SnmpOID {
             return Arrays.asList(DEV_MAC, DEV_NAME, DEV_CLIENTS_COUNT, DEV_LOAD_CHANNEL_UTILIZATION);
         }
     }
+
+    public static class Standard {
+        public static final OID IF_MIB = new OID("1.3.6.1.2.1.2.2");
+
+        public static List<OID> toList() {
+            return Arrays.asList(IF_MIB);
+        }
+    }
 }
