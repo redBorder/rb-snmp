@@ -11,6 +11,7 @@ import org.snmp4j.Snmp;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +45,7 @@ public class Configuration {
         if (sensors != null) {
             for (Map<String, Object> sensor : sensors) {
                 String type = (String) sensor.get("type");
-                if (type.toUpperCase().equals("MERAKI") || type.toUpperCase().equals("WLC") || type.toUpperCase().equals("RUCKUS")) {
+                if (type.toString().matches("(?:MERAKI|WLC|RUCKUS|STANDARD)")) {
                     SnmpTask snmpTask = new SnmpTask();
 
                     snmpTask.setType(type);
@@ -55,6 +56,12 @@ public class Configuration {
                     snmpTask.setEnrichment((Map<String, Object>) sensor.get("enrichment"));
 
                     snmpTasks.add(snmpTask);
+
+                    if(type.toString().equals("STANDARD")){
+                        snmpTask.setFilter(Arrays.asList(String.valueOf(sensor.get("interfaces")).split("\\s*,\\s*")));
+                        log.info("FILTER {}",snmpTask.getFilter());
+                    }
+
                 }
             }
         } else {
