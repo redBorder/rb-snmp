@@ -1,9 +1,12 @@
 package net.redborder.snmp.util;
 
+import jdk.nashorn.internal.runtime.regexp.joni.Regex;
 import org.snmp4j.smi.OID;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class SnmpOID {
     public static class Meraki {
@@ -50,10 +53,22 @@ public class SnmpOID {
     }
 
     public static class Standard {
-        public static final OID IF_MIB = new OID("1.3.6.1.2.1.2.2");
+        public static final OID IF_NUMBER = new OID("1.3.6.1.2.1.2.1.0");
+        // Interface name
+        public static final OID IF_DESCRIPTION = new OID("1.3.6.1.2.1.2.2.1.2");
+        // MAC address
+        public static final OID IF_MAC = new OID("1.3.6.1.2.1.2.2.1.6");
+        // Operation status
+        public static final OID IF_OPER_STATUS = new OID("1.3.6.1.2.1.2.2.1.8");
+        // Interface Input Octets
+        public static final OID IF_IN_OCTETS = new OID("1.3.6.1.2.1.2.2.1.10");
+        // Interface Output Octets
+        public static final OID IF_OUT_OCTETS = new OID("1.3.6.1.2.1.2.2.1.16");
+
+        public static Set<String> FILTER = new HashSet<>();
 
         public static List<OID> toList() {
-            return Arrays.asList(IF_MIB);
+            return Arrays.asList(IF_NUMBER, IF_DESCRIPTION, IF_MAC, IF_OPER_STATUS, IF_IN_OCTETS, IF_OUT_OCTETS);
         }
     }
 }
