@@ -23,7 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class SnmpStandardWorker extends Worker{
+public class SnmpStandardWorker extends Worker {
 
     final Logger log = LoggerFactory.getLogger(SnmpStandardWorker.class);
     SnmpTask snmpTask;
@@ -76,11 +76,8 @@ public class SnmpStandardWorker extends Worker{
                     log.info("SNMP response: Number of interfaces {}", numOfInterfaces);
 
                     while (running.get()) {
-
                         Long start = System.currentTimeMillis();
-
                         TableUtils utils = new TableUtils(snmp, new DefaultPDUFactory(PDU.GETBULK));
-
                         List<TableEvent> results = utils.getTable(target, new OID[]{
                                 SnmpOID.Standard.IF_DESCRIPTION,
                                 SnmpOID.Standard.IF_MAC,
@@ -90,86 +87,78 @@ public class SnmpStandardWorker extends Worker{
                         }, null, null);
 
                         log.info("Getting data for {} interfaces.", results.size());
-
                         Long exec_time = (System.currentTimeMillis() - start) / 1000;
-
                         log.info("SNMP response in {} ms.", (System.currentTimeMillis() - start));
 
                         List<Map<String, Object>> devicesData = new ArrayList<>();
                         List<String> devicesMacAddress = new ArrayList<>();
-
                         Set<String> filter = snmpTask.getFilter();
 
                         log.info("Applying filter for interfaces : {}", filter);
-
                         int counter = 1;
 
-                        for(TableEvent event : results){
-
-                            if(filter.contains(String.valueOf(counter)) || filter.isEmpty()) {
-
+                        for (TableEvent event : results) {
+                            if (filter.contains(String.valueOf(counter)) || filter.isEmpty()) {
                                 VariableBinding[] varBindings = event.getColumns();
-
                                 String ifName = varBindings[0].getVariable().toString();
                                 String macAddress = varBindings[1].getVariable().toString();
 
-                                devicesMacAddress.add(macAddress);
+                                if (macAddress != null && !macAddress.equals("")) {
+                                    devicesMacAddress.add(macAddress);
 
-                                Map<String, Object> deviceData = new HashMap<>();
-                                Map<String, Long> data = cache.getFlows(ifName);
+                                    Map<String, Object> deviceData = new HashMap<>();
+                                    Map<String, Long> data = cache.getFlows(ifName);
 
-                                Long sendData = Long.valueOf(varBindings[4].getVariable().toString());
-                                Long recvData = Long.valueOf(varBindings[3].getVariable().toString());
+                                    Long sendData = Long.valueOf(varBindings[4].getVariable().toString());
+                                    Long recvData = Long.valueOf(varBindings[3].getVariable().toString());
 
-                                if (data == null){
-                                    Map<String, Long> newData = new HashMap<>();
-                                    newData.put("devInterfaceSentBytes", sendData);
-                                    newData.put("devInterfaceRecvBytes", recvData);
-                                    deviceData.put("validForStats", false);
-                                    cache.addCache(ifName, newData);
-                                } else {
-                                    deviceData.put("validForStats", true);
-                                    deviceData.put("devInterfaceSentBytes", sendData - data.get("devInterfaceSentBytes"));
-                                    deviceData.put("devInterfaceRecvBytes", recvData - data.get("devInterfaceRecvBytes"));
+                                    if (data == null) {
+                                        Map<String, Long> newData = new HashMap<>();
+                                        newData.put("devInterfaceSentBytes", sendData);
+                                        newData.put("devInterfaceRecvBytes", recvData);
+                                        deviceData.put("validForStats", false);
+                                        cache.addCache(ifName, newData);
+                                    } else {
+                                        deviceData.put("validForStats", true);
+                                        deviceData.put("devInterfaceSentBytes", sendData - data.get("devInterfaceSentBytes"));
+                                        deviceData.put("devInterfaceRecvBytes", recvData - data.get("devInterfaceRecvBytes"));
 
-                                    Map<String, Long> newData = new HashMap<>();
-                                    newData.put("devInterfaceSentBytes", sendData);
-                                    newData.put("devInterfaceRecvBytes", recvData);
-                                    cache.addCache(ifName, newData);
+                                        Map<String, Long> newData = new HashMap<>();
+                                        newData.put("devInterfaceSentBytes", sendData);
+                                        newData.put("devInterfaceRecvBytes", recvData);
+                                        cache.addCache(ifName, newData);
+                                    }
+
+                                    deviceData.put("sensorIp", snmpTask.getIP());
+                                    deviceData.put("enrichment", snmpTask.getEnrichment());
+                                    deviceData.put("timeSwitched", pullingTime - exec_time);
+                                    deviceData.put("type", "ap-stats");
+                                    deviceData.put("devName", ifName);
+                                    deviceData.put("devInterfaceMac", macAddress);
+                                    deviceData.put("devStatus", parseStatus(varBindings[2].getVariable().toString()));
+
+
+                                    devicesData.add(deviceData);
+                                    filter.remove(String.valueOf(counter));
                                 }
-
-                                deviceData.put("sensorIp", snmpTask.getIP());
-                                deviceData.put("enrichment", snmpTask.getEnrichment());
-                                deviceData.put("timeSwitched", pullingTime - exec_time);
-                                deviceData.put("type", "ap-stats");
-                                deviceData.put("devName", ifName);
-                                deviceData.put("devInterfaceMac", macAddress);
-                                deviceData.put("devStatus", parseStatus(varBindings[2].getVariable().toString()));
-
-                                devicesData.add(deviceData);
-
-                                filter.remove(String.valueOf(counter));
                             }
 
                             counter++;
-
                         }
 
-                        log.info("Result : {}", devicesData);
+                        log.debug("Result : {}", devicesData);
 
                         try {
-                            for(Map<String, Object> interfaceData : devicesData) {
+                            for (Map<String, Object> interfaceData : devicesData) {
                                 queue.put(interfaceData);
                             }
 
-                            if((pullingTime - exec_time) > 0)
+                            if ((pullingTime - exec_time) > 0)
                                 TimeUnit.SECONDS.sleep(pullingTime - exec_time);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-
                     }
-
                 }
             }
 
@@ -181,7 +170,7 @@ public class SnmpStandardWorker extends Worker{
         }
     }
 
-    public String parseStatus(String status){
+    public String parseStatus(String status) {
         String parsedStatus;
 
         if (status.equals("1"))
@@ -208,5 +197,7 @@ public class SnmpStandardWorker extends Worker{
     }
 
     @Override
-    public SnmpTask getSnmpTask() { return snmpTask; }
+    public SnmpTask getSnmpTask() {
+        return snmpTask;
+    }
 }

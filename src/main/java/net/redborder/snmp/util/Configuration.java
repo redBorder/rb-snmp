@@ -45,7 +45,7 @@ public class Configuration {
         if (sensors != null) {
             for (Map<String, Object> sensor : sensors) {
                 String type = (String) sensor.get("type");
-                if (type.toString().matches("(?:MERAKI|WLC|RUCKUS|STANDARD)")) {
+                if (type.matches("(?:MERAKI|WLC|RUCKUS|STANDARD)")) {
                     SnmpTask snmpTask = new SnmpTask();
 
                     snmpTask.setType(type);
@@ -57,7 +57,7 @@ public class Configuration {
 
                     snmpTasks.add(snmpTask);
 
-                    if(type.toString().equals("STANDARD")){
+                    if(type.equals("STANDARD")){
                         snmpTask.setFilter(Arrays.asList(String.valueOf(sensor.get("interfaces")).split("\\s*,\\s*")));
                         log.info("FILTER {}",snmpTask.getFilter());
                     }
