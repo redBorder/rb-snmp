@@ -15,7 +15,6 @@ import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 public class SnmpServer {
     public static void main(String[] args) {

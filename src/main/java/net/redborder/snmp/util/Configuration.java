@@ -6,7 +6,6 @@ import net.redborder.snmp.tasks.SnmpTask;
 import org.ho.yaml.Yaml;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snmp4j.Snmp;
 
 import java.io.File;
 import java.io.FileNotFoundException;

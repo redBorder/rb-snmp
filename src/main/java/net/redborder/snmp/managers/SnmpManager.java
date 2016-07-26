@@ -2,8 +2,8 @@ package net.redborder.snmp.managers;
 
 import net.redborder.clusterizer.Task;
 import net.redborder.clusterizer.TasksChangedListener;
-import net.redborder.snmp.workers.*;
 import net.redborder.snmp.tasks.SnmpTask;
+import net.redborder.snmp.workers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

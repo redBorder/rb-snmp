@@ -1,6 +1,5 @@
 package net.redborder.snmp.util;
 
-import jdk.nashorn.internal.runtime.regexp.joni.Regex;
 import org.snmp4j.smi.OID;
 
 import java.util.Arrays;

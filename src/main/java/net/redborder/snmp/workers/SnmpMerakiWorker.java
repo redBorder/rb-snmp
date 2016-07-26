@@ -1,6 +1,5 @@
 package net.redborder.snmp.workers;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import net.redborder.snmp.tasks.SnmpTask;
 import net.redborder.snmp.util.InterfacesFlowsDB;
 import net.redborder.snmp.util.SnmpOID;
@@ -17,7 +16,10 @@ import org.snmp4j.util.TreeEvent;
 import org.snmp4j.util.TreeUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,7 +31,6 @@ public class SnmpMerakiWorker extends Worker {
     LinkedBlockingQueue<Map<String, Object>> queue;
     InterfacesFlowsDB cache = new InterfacesFlowsDB();
     Long pullingTime;
-    final Long MAX = 4294967296L;
     volatile AtomicBoolean running = new AtomicBoolean(false);
 
 
@@ -112,6 +113,11 @@ public class SnmpMerakiWorker extends Worker {
                     }
                 } else {
                     log.warn("No response from host: {}, community: {}", snmpTask.getIP(), snmpTask.getCommunity());
+                    try {
+                        TimeUnit.SECONDS.sleep(1L);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
             snmp.close();
