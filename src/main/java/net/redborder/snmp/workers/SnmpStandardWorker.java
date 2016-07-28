@@ -31,6 +31,7 @@ public class SnmpStandardWorker extends Worker {
 
     LinkedBlockingQueue<Map<String, Object>> queue;
     Long pullingTime;
+    Long last_time;
 
     volatile AtomicBoolean running = new AtomicBoolean(false);
 
@@ -44,7 +45,7 @@ public class SnmpStandardWorker extends Worker {
     public void run() {
         try {
             running.set(true);
-            log.info("Start snmp worker : {} with community : {}", snmpTask.getIP(), snmpTask.getCommunity());
+            log.info("{} - Start snmp worker: {} with community: {}", snmpTask.getIP(), snmpTask.getIP(), snmpTask.getCommunity());
 
             TransportMapping transport = new DefaultUdpTransportMapping();
             Snmp snmp = new Snmp(transport);
@@ -77,6 +78,7 @@ public class SnmpStandardWorker extends Worker {
 
                     while (running.get()) {
                         Long start = System.currentTimeMillis();
+                        Long timeStart = start / 1000L;
                         TableUtils utils = new TableUtils(snmp, new DefaultPDUFactory(PDU.GETBULK));
                         List<TableEvent> results = utils.getTable(target, new OID[]{
                                 SnmpOID.Standard.IF_DESCRIPTION,
@@ -96,6 +98,7 @@ public class SnmpStandardWorker extends Worker {
 
                         log.info("Applying filter for interfaces : {}", filter);
                         int counter = 1;
+                        timeStart = timeStart - (timeStart % 60);
 
                         for (TableEvent event : results) {
                             if (filter.contains(String.valueOf(counter)) || filter.isEmpty()) {
@@ -131,7 +134,8 @@ public class SnmpStandardWorker extends Worker {
 
                                     deviceData.put("sensorIp", snmpTask.getIP());
                                     deviceData.put("enrichment", snmpTask.getEnrichment());
-                                    deviceData.put("timeSwitched", pullingTime - exec_time);
+                                    deviceData.put("first_switched", last_time);
+                                    deviceData.put("timestamp", timeStart);
                                     deviceData.put("type", "ap-stats");
                                     deviceData.put("devName", ifName);
                                     deviceData.put("devInterfaceMac", macAddress);
@@ -158,6 +162,8 @@ public class SnmpStandardWorker extends Worker {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+
+                        last_time = timeStart;
                     }
                 }
             }

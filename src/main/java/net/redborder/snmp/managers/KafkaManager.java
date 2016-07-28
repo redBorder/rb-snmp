@@ -62,8 +62,9 @@ public class KafkaManager extends Thread {
                 if (event != null) {
                     String directions[] = new String[]{"ingress", "egress"};
                     Map<String, Object> state = new HashMap<>();
-                    Long time_now = System.currentTimeMillis() / 1000;
-                    time_now = time_now - (time_now % 60);
+                    Long time_now = (Long) event.get("timestamp");
+                    Long time_before = (Long) event.get("first_switched");
+
                     Map<String, Object> enrichment = (Map<String, Object>) event.get("enrichment");
 
                     if (event.get("devClientCount") != null) {
@@ -119,7 +120,7 @@ public class KafkaManager extends Thread {
                                 if (pkts != null) directionStats.put("pkts", pkts);
                                 directionStats.put("direction", direction);
                                 directionStats.put("timestamp", time_now);
-                                directionStats.put("first_switched", time_now - (Long) event.get("timeSwitched"));
+                                directionStats.put("first_switched", time_before);
                                 directionStats.put("wireless_station", event.get("devInterfaceMac"));
 
                                 Object interfaceName = event.get("devInterfaceName");

@@ -30,6 +30,7 @@ public class SnmpWLCWorker extends Worker {
     LinkedBlockingQueue<Map<String, Object>> queue;
     Long pullingTime;
     volatile AtomicBoolean running = new AtomicBoolean(false);
+    Long last_time;
 
     public SnmpWLCWorker(SnmpTask snmpTask, LinkedBlockingQueue<Map<String, Object>> queue) {
         this.snmpTask = snmpTask;
@@ -58,6 +59,8 @@ public class SnmpWLCWorker extends Worker {
 
             while (running.get()) {
                 Long start = System.currentTimeMillis();
+                Long timeStart = start / 1000L;
+
                 DefaultPDUFactory defaultPDUFactory = new DefaultPDUFactory();
                 TreeUtils treeUtils = new TreeUtils(snmp, defaultPDUFactory);
                 List<TreeEvent> events = new ArrayList<>();
@@ -85,8 +88,9 @@ public class SnmpWLCWorker extends Worker {
 
                 List<String> devicesOIDs = getDevicesOIDs(results);
                 Long exec_time = (System.currentTimeMillis() - start) / 1000;
+                timeStart = timeStart - (timeStart % 60);
 
-                List<Map<String, Object>> devicesData = getDevicesData(results, devicesOIDs, pullingTime - exec_time);
+                List<Map<String, Object>> devicesData = getDevicesData(timeStart, results, devicesOIDs);
 
                 log.info("SNMP accessPoints from {} count: {}", snmpTask.getIP(), devicesData.size());
                 log.info("SNMP response in {} ms.", (System.currentTimeMillis() - start));
@@ -125,7 +129,7 @@ public class SnmpWLCWorker extends Worker {
         return snmpTask;
     }
 
-    public List<Map<String, Object>> getDevicesData(Map<String, String> results, List<String> devicesOIDs, Long split) {
+    public List<Map<String, Object>> getDevicesData(Long timeStart, Map<String, String> results, List<String> devicesOIDs) {
 
         List<Map<String, Object>> devicesData = new ArrayList<>();
         List<String> devicesMacAddress = new ArrayList<>();
@@ -138,7 +142,8 @@ public class SnmpWLCWorker extends Worker {
             deviceData.put("validForStats", false);
             deviceData.put("sensorIp", snmpTask.getIP());
             deviceData.put("enrichment", snmpTask.getEnrichment());
-            deviceData.put("timeSwitched", split);
+            deviceData.put("first_switched", last_time);
+            deviceData.put("timestamp", timeStart);
             deviceData.put("type", "ap-stats");
             deviceData.put("devName", results.get(SnmpOID.WirelessLanController.DEV_NAME + "." + deviceOID));
             deviceData.put("devInterfaceMac", macAddress);
@@ -154,6 +159,8 @@ public class SnmpWLCWorker extends Worker {
 
             devicesData.add(deviceData);
         }
+
+        last_time = timeStart;
         return devicesData;
     }
 

@@ -32,6 +32,7 @@ public class SnmpMerakiWorker extends Worker {
     InterfacesFlowsDB cache = new InterfacesFlowsDB();
     Long pullingTime;
     volatile AtomicBoolean running = new AtomicBoolean(false);
+    Long last_time;
 
 
     public SnmpMerakiWorker(SnmpTask snmpTask, LinkedBlockingQueue<Map<String, Object>> queue) {
@@ -61,6 +62,7 @@ public class SnmpMerakiWorker extends Worker {
 
             while (running.get()) {
                 Long start = System.currentTimeMillis();
+                Long timeStart = start / 1000L;
                 DefaultPDUFactory defaultPDUFactory = new DefaultPDUFactory();
                 TreeUtils treeUtils = new TreeUtils(snmp, defaultPDUFactory);
                 List<TreeEvent> events = new ArrayList<>();
@@ -80,7 +82,7 @@ public class SnmpMerakiWorker extends Worker {
                     }
                 }
                 if (!errorResponse) {
-                    log.info("Getting from SNMP: {}  - content: {}", snmpTask.getIP(), !events.isEmpty());
+                    log.info("{} - Getting from SNMP: {}  - content: {}", snmpTask.getIP(), snmpTask.getIP(), !events.isEmpty());
 
                     Map<String, String> results = new HashMap<>();
 
@@ -98,10 +100,12 @@ public class SnmpMerakiWorker extends Worker {
                     }
 
                     List<String> interfacesOIDs = getInterfacesOIDs(results);
-                    List<Map<String, Object>> interfacesData = getInterfacesData(results, interfacesOIDs);
+                    timeStart = timeStart - (timeStart % 60);
 
-                    log.info("SNMP accesPointsInterfaces from {} count: {}", snmpTask.getIP(), interfacesData.size());
-                    log.info("SNMP response in {} ms.", (System.currentTimeMillis() - start));
+                    List<Map<String, Object>> interfacesData = getInterfacesData(timeStart, results, interfacesOIDs);
+
+                    log.info("{} - SNMP accesPointsInterfaces from {} count: {}", snmpTask.getIP(), snmpTask.getIP(), interfacesData.size());
+                    log.info("{} - SNMP response in {} ms.", snmpTask.getIP(), (System.currentTimeMillis() - start));
 
                     try {
                         for (Map<String, Object> interfaceData : interfacesData) {
@@ -109,22 +113,21 @@ public class SnmpMerakiWorker extends Worker {
                         }
                         TimeUnit.SECONDS.sleep(pullingTime);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        log.error(e.getMessage(), e);
                     }
                 } else {
-                    log.warn("No response from host: {}, community: {}", snmpTask.getIP(), snmpTask.getCommunity());
+                    log.warn("{} - No response from host: {}, community: {}", snmpTask.getIP(), snmpTask.getIP(), snmpTask.getCommunity());
                     try {
                         TimeUnit.SECONDS.sleep(1L);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        log.error(e.getMessage(), e);
                     }
                 }
             }
             snmp.close();
             transport.close();
         } catch (IOException e) {
-            e.printStackTrace();
-            // TODO
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -145,7 +148,7 @@ public class SnmpMerakiWorker extends Worker {
         return interfacesOIDs;
     }
 
-    public List<Map<String, Object>> getInterfacesData(Map<String, String> results, List<String> interfacesOIDs) {
+    public List<Map<String, Object>> getInterfacesData(Long timeStart, Map<String, String> results, List<String> interfacesOIDs) {
 
         List<Map<String, Object>> interfacesData = new ArrayList<>();
         Map<String, Long> totalBytes = new HashMap<>();
@@ -160,6 +163,7 @@ public class SnmpMerakiWorker extends Worker {
                     results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + interfaceOID) == null ||
                     results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + interfaceOID) == null) {
                 cache.removeCache(interfaceOID);
+                log.warn("Some traffic data is null remove the interface OID {}", interfaceOID);
             } else {
 
                 String ap = interfaceOID.substring(0, interfaceOID.lastIndexOf("."));
@@ -167,7 +171,8 @@ public class SnmpMerakiWorker extends Worker {
                 interfaceData.put("interfaceOID", interfaceOID);
                 interfaceData.put("sensorIp", snmpTask.getIP());
                 interfaceData.put("enrichment", snmpTask.getEnrichment());
-                interfaceData.put("timeSwitched", pullingTime);
+                interfaceData.put("first_switched", last_time);
+                interfaceData.put("timestamp", timeStart);
 
                 interfaceData.put("devName", results.get(SnmpOID.Meraki.DEV_NAME + "." + ap));
                 interfaceData.put("devStatus", parseStatus(results.get(SnmpOID.Meraki.DEV_STATUS + "." + ap)));
@@ -206,10 +211,11 @@ public class SnmpMerakiWorker extends Worker {
                     //         Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_PKTS + "." + interfaceOID)) +
                     //                 MAX - interfaceCache.get("devInterfaceSentPkts");
 
+                    log.warn("{} - Overflow SentPkts setting to 0", snmpTask.getIP());
                     devInterfaceSentPktsDiff = 0L;
                 }
 
-                log.info("PktSent Mac [" + macAddress + "] Cache [{}] Event [{}] Diff = " + devInterfaceSentPktsDiff, interfaceCache.get("devInterfaceSentPkts"), devInterfaceSentPkts);
+                log.debug("{} - PktSent Mac [" + macAddress + "] Cache [{}] Event [{}] Diff = " + devInterfaceSentPktsDiff, snmpTask.getIP(), interfaceCache.get("devInterfaceSentPkts"), devInterfaceSentPkts);
 
                 Long devInterfaceRecvPkts =
                         Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_PKTS + "." + interfaceOID));
@@ -219,10 +225,11 @@ public class SnmpMerakiWorker extends Worker {
                     //        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_PKTS + "." + interfaceOID)) +
                     //                MAX - interfaceCache.get("devInterfaceRecvPkts");
 
+                    log.warn("{} - Overflow RecvPkts setting to 0", snmpTask.getIP());
                     devInterfaceRecvPktsDiff = 0L;
                 }
 
-                log.info("PktRecv Mac [" + macAddress + "] Cache [{}] Event [{}] Diff = " + devInterfaceRecvPktsDiff, interfaceCache.get("devInterfaceRecvPkts"), devInterfaceRecvPkts);
+                log.debug("{} - PktRecv Mac [" + macAddress + "] Cache [{}] Event [{}] Diff = " + devInterfaceRecvPktsDiff, snmpTask.getIP(), interfaceCache.get("devInterfaceRecvPkts"), devInterfaceRecvPkts);
 
                 Long devInterfaceSentBytes =
                         Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + interfaceOID));
@@ -232,10 +239,11 @@ public class SnmpMerakiWorker extends Worker {
                     //        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_SENT_BYTES + "." + interfaceOID)) +
                     //                MAX - interfaceCache.get("devInterfaceSentBytes");
 
+                    log.warn("{} - Overflow SentBytes setting to 0", snmpTask.getIP());
                     devInterfaceSentBytesDiff = 0L;
                 }
 
-                log.info("BytesSent Mac [" + macAddress + "] Cache [{}] Event [{}] Diff = " + devInterfaceSentBytesDiff, interfaceCache.get("devInterfaceSentBytes"), devInterfaceSentBytes);
+                log.debug("{} - BytesSent Mac [" + macAddress + "] Cache [{}] Event [{}] Diff = " + devInterfaceSentBytesDiff, snmpTask.getIP(), interfaceCache.get("devInterfaceSentBytes"), devInterfaceSentBytes);
 
                 Long devInterfaceRecvBytes =
                         Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + interfaceOID));
@@ -245,10 +253,11 @@ public class SnmpMerakiWorker extends Worker {
                     //        Long.parseLong(results.get(SnmpOID.Meraki.DEV_INTERFACE_RECV_BYTES + "." + interfaceOID)) +
                     //                MAX - interfaceCache.get("devInterfaceRecvBytes");
 
+                    log.warn("{} - Overflow RecvBytes setting to 0", snmpTask.getIP());
                     devInterfaceRecvBytesDiff = 0L;
                 }
 
-                log.info("BytesRecv Mac [" + macAddress + "] Cache [{}] Event [{}] Diff = " + devInterfaceRecvBytesDiff, interfaceCache.get("devInterfaceRecvBytes"), devInterfaceRecvBytes);
+                log.debug("{} - BytesRecv Mac [" + macAddress + "] Cache [{}] Event [{}] Diff = " + devInterfaceRecvBytesDiff, snmpTask.getIP(), interfaceCache.get("devInterfaceRecvBytes"), devInterfaceRecvBytes);
 
 
                 totalBytes.put(macAddress, totalBytes.get(macAddress) + devInterfaceSentBytesDiff + devInterfaceRecvBytesDiff);
@@ -268,13 +277,16 @@ public class SnmpMerakiWorker extends Worker {
 
                 interfaceData.putAll(interfaceFlows);
                 interfacesData.add(interfaceData);
+
             }
         }
 
         for (Map.Entry<String, Long> entry : totalBytes.entrySet()) {
-            log.info("AP: {}, Bytes: {} Mbs", entry.getKey(), entry.getValue() / 1024 / 1024);
+            log.info("{} - AP: {}, KBytes: {}", snmpTask.getIP(), entry.getKey(), entry.getValue() / 1024);
         }
 
+        log.info("FIRST {}  NOW {}", last_time, timeStart);
+        last_time = timeStart;
         return interfacesData;
     }
 
