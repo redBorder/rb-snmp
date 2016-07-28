@@ -20,9 +20,12 @@ public class SnmpOID {
         public static final OID DEV_INTERFACE_SENT_BYTES = new OID("1.3.6.1.4.1.29671.1.1.5.1.6");
         public static final OID DEV_INTERFACE_RECV_BYTES = new OID("1.3.6.1.4.1.29671.1.1.5.1.7");
 
+        public static final OID DEV_NETWORK_NAME = new OID("1.3.6.1.4.1.29671.1.1.4.1.11");
+
         public static List<OID> toList() {
             return Arrays.asList(DEV_INTERFACE_MAC, DEV_INTERFACE_NAME, DEV_NAME, DEV_STATUS, DEV_CLIENT_COUNT,
-                    DEV_INTERFACE_RECV_BYTES, DEV_INTERFACE_SENT_BYTES, DEV_INTERFACE_SENT_PKTS, DEV_INTERFACE_RECV_PKTS);
+                    DEV_INTERFACE_RECV_BYTES, DEV_INTERFACE_SENT_BYTES, DEV_INTERFACE_SENT_PKTS, DEV_INTERFACE_RECV_PKTS,
+                    DEV_NETWORK_NAME);
         }
     }
 

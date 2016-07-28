@@ -69,8 +69,8 @@ public class KafkaManager extends Thread {
 
                     if (event.get("devClientCount") != null) {
                         state.put("wireless_station", event.get("devInterfaceMac"));
-                        if (event.get("devName") != null)
-                            state.put("wireless_station_name", event.get("devName"));
+                        if (event.get("devName") != null) state.put("wireless_station_name", event.get("devName"));
+                        if(event.get("devNetworkName") != null) state.put("network_name", event.get("devNetworkName"));
                         state.put("client_count", event.get("devClientCount"));
                         state.put("type", "snmp_apMonitor");
                         state.put("timestamp", time_now);
@@ -122,6 +122,7 @@ public class KafkaManager extends Thread {
                                 directionStats.put("timestamp", time_now);
                                 directionStats.put("first_switched", time_before);
                                 directionStats.put("wireless_station", event.get("devInterfaceMac"));
+                                if(event.get("devNetworkName") != null) directionStats.put("network_name", event.get("devNetworkName"));
 
                                 Object interfaceName = event.get("devInterfaceName");
                                 if (interfaceName != null) directionStats.put("interface_name", interfaceName);

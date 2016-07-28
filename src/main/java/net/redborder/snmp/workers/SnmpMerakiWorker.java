@@ -175,6 +175,8 @@ public class SnmpMerakiWorker extends Worker {
                 interfaceData.put("timestamp", timeStart);
 
                 interfaceData.put("devName", results.get(SnmpOID.Meraki.DEV_NAME + "." + ap));
+                interfaceData.put("devNetworkName", results.get(SnmpOID.Meraki.DEV_NETWORK_NAME + "." + ap));
+
                 interfaceData.put("devStatus", parseStatus(results.get(SnmpOID.Meraki.DEV_STATUS + "." + ap)));
 
                 String macAddress = results.get(SnmpOID.Meraki.DEV_INTERFACE_MAC + "." + interfaceOID);
