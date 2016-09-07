@@ -112,7 +112,7 @@ public class KafkaManager extends Thread {
                                 bytes = (Long) event.get("devInterfaceRecvBytes");
                                 pkts = (Long) event.get("devInterfaceRecvPkts");
                             }
-                            if ((bytes != null && bytes < 0) || (pkts != null && pkts < 0)) {
+                            if ((bytes != null && bytes <= 0) || (pkts != null && pkts <= 0)) {
                                 log.warn("Flow's lower than 0!. Sensor: {}, AP: {}, Bytes: {}, Pkts: {}",
                                         event.get("sensor_ip"), event.get("devInterfaceMac"), bytes, pkts);
                             } else {
