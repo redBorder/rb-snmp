@@ -2,10 +2,7 @@ package net.redborder.snmp.tasks;
 
 import net.redborder.clusterizer.MappedTask;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class SnmpTask extends MappedTask {
 
@@ -62,6 +59,14 @@ public class SnmpTask extends MappedTask {
 
     public void setEnrichment(Map<String, Object> enrichment) {
         setData("enrichment", enrichment);
+    }
+
+    public void setNetworks(List<String> networks) {
+        setData("networks", networks);
+    }
+
+    public List<String> getNetworks() {
+        return (List<String>) getData("networks");
     }
 
     public Map<String, Object> getEnrichment() {

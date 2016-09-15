@@ -53,6 +53,8 @@ public class Configuration {
                     snmpTask.setIP((String) sensor.get("ip_address"));
                     snmpTask.setCommunity((String) sensor.get("community"));
                     snmpTask.setEnrichment((Map<String, Object>) sensor.get("enrichment"));
+                    List<String> networks = (List<String>) sensor.get("networks");
+                    if(networks != null) snmpTask.setNetworks(networks);
 
                     snmpTasks.add(snmpTask);
 
