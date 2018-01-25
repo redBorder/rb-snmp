@@ -1,0 +1,5 @@
+general:
+   zk_connect: "localhost:2181"
+   zk_path: '/rb_snmp'
+   kafka_brokers: "localhost:9092"
+sensors:
