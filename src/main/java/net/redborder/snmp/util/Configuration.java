@@ -4,15 +4,19 @@ package net.redborder.snmp.util;
 import net.redborder.clusterizer.Task;
 import net.redborder.snmp.tasks.SnmpTask;
 import org.ho.yaml.Yaml;
-import org.snmp4j.Snmp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class Configuration {
+    final Logger log = LoggerFactory.getLogger(Configuration.class);
+
     private final String CONFIG_FILE_PATH = "/opt/rb/etc/rb-snmp/config.yml";
     private Map<String, Object> general;
     private List<Map<String, Object>> sensors;
@@ -35,10 +39,12 @@ public class Configuration {
         general = (Map<String, Object>) map.get("general");
         sensors = (List<Map<String, Object>>) map.get("sensors");
 
+        log.info("CONFIG[{}]", map);
+
         if (sensors != null) {
             for (Map<String, Object> sensor : sensors) {
                 String type = (String) sensor.get("type");
-                if (!type.toUpperCase().equals("MERAKI") || !type.toUpperCase().equals("WLC")) {
+                if (type.matches("(?:MERAKI|WLC|RUCKUS|STANDARD)")) {
                     SnmpTask snmpTask = new SnmpTask();
 
                     snmpTask.setType(type);
@@ -47,8 +53,16 @@ public class Configuration {
                     snmpTask.setIP((String) sensor.get("ip_address"));
                     snmpTask.setCommunity((String) sensor.get("community"));
                     snmpTask.setEnrichment((Map<String, Object>) sensor.get("enrichment"));
+                    List<String> networks = (List<String>) sensor.get("networks");
+                    if(networks != null) snmpTask.setNetworks(networks);
 
                     snmpTasks.add(snmpTask);
+
+                    if(type.equals("STANDARD")){
+                        snmpTask.setFilter(Arrays.asList(String.valueOf(sensor.get("interfaces")).split("\\s*,\\s*")));
+                        log.info("FILTER {}",snmpTask.getFilter());
+                    }
+
                 }
             }
         } else {

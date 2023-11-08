@@ -1,6 +1,7 @@
 package net.redborder.snmp.workers;
 
 import net.redborder.snmp.tasks.SnmpTask;
+import net.redborder.snmp.util.InterfacesFlowsDB;
 import net.redborder.snmp.util.SnmpOID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,16 +24,18 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class SnmpWLCWorker extends Worker {
+public class SnmpRuckusWorker extends Worker {
 
     final Logger log = LoggerFactory.getLogger(SnmpMerakiWorker.class);
     SnmpTask snmpTask;
+    InterfacesFlowsDB cache = new InterfacesFlowsDB();
+
     LinkedBlockingQueue<Map<String, Object>> queue;
     Long pullingTime;
     volatile AtomicBoolean running = new AtomicBoolean(false);
     Long last_time;
 
-    public SnmpWLCWorker(SnmpTask snmpTask, LinkedBlockingQueue<Map<String, Object>> queue) {
+    public SnmpRuckusWorker(SnmpTask snmpTask, LinkedBlockingQueue<Map<String, Object>> queue) {
         this.snmpTask = snmpTask;
         this.queue = queue;
         this.pullingTime = snmpTask.getPullingTime().longValue();
@@ -42,7 +45,7 @@ public class SnmpWLCWorker extends Worker {
     public void run() {
         try {
             running.set(true);
-            log.info("Start snmp worker: {} with community: {}", snmpTask.getIP(), snmpTask.getCommunity());
+            log.info("{} - Start snmp worker: {} with community: {}", snmpTask.getIP(), snmpTask.getIP(), snmpTask.getCommunity());
 
             Address targetAddress = GenericAddress.parse(snmpTask.getIP() + "/" + snmpTask.getPort());
             TransportMapping transport = new DefaultUdpTransportMapping();
@@ -60,16 +63,15 @@ public class SnmpWLCWorker extends Worker {
             while (running.get()) {
                 Long start = System.currentTimeMillis();
                 Long timeStart = start / 1000L;
-
                 DefaultPDUFactory defaultPDUFactory = new DefaultPDUFactory();
                 TreeUtils treeUtils = new TreeUtils(snmp, defaultPDUFactory);
                 List<TreeEvent> events = new ArrayList<>();
 
-                for (OID oid : SnmpOID.WirelessLanController.toList()) {
+                for (OID oid : SnmpOID.Ruckus.toList()) {
                     events.addAll(treeUtils.getSubtree(target, oid));
                 }
 
-                log.info("Getting from SNMP: {}  - content: {}", snmpTask.getIP(), !events.isEmpty());
+                log.info("{} - Getting from SNMP: {}  - content: {}", snmpTask.getIP(), snmpTask.getIP(), !events.isEmpty());
 
                 Map<String, String> results = new HashMap<>();
 
@@ -88,12 +90,12 @@ public class SnmpWLCWorker extends Worker {
 
                 List<String> devicesOIDs = getDevicesOIDs(results);
                 Long exec_time = (System.currentTimeMillis() - start) / 1000;
-                timeStart = timeStart - (timeStart % 60);
 
+                timeStart = timeStart - (timeStart % 60);
                 List<Map<String, Object>> devicesData = getDevicesData(timeStart, results, devicesOIDs);
 
-                log.info("SNMP accessPoints from {} count: {}", snmpTask.getIP(), devicesData.size());
-                log.info("SNMP response in {} ms.", (System.currentTimeMillis() - start));
+                log.info("{} - SNMP accessPoints from {} count: {}", snmpTask.getIP(), snmpTask.getIP(), devicesData.size());
+                log.info("{} - SNMP response in {} ms.", snmpTask.getIP(), (System.currentTimeMillis() - start));
 
                 try {
                     for (Map<String, Object> interfaceData : devicesData) {
@@ -117,8 +119,8 @@ public class SnmpWLCWorker extends Worker {
     public List<String> getDevicesOIDs(Map<String, String> results) {
         List<String> devicesOIDs = new ArrayList<>();
         for (String key : results.keySet()) {
-            if (key.contains(SnmpOID.WirelessLanController.DEV_NAME.toString() + ".")) {
-                devicesOIDs.add(key.replace(SnmpOID.WirelessLanController.DEV_NAME.toString() + ".", ""));
+            if (key.contains(SnmpOID.Ruckus.DEV_NAME.toString() + ".")) {
+                devicesOIDs.add(key.replace(SnmpOID.Ruckus.DEV_NAME.toString() + ".", ""));
             }
         }
         return devicesOIDs;
@@ -135,27 +137,45 @@ public class SnmpWLCWorker extends Worker {
         List<String> devicesMacAddress = new ArrayList<>();
 
         for (String deviceOID : devicesOIDs) {
-            String macAddress = results.get(SnmpOID.WirelessLanController.DEV_MAC + "." + deviceOID + ".0");
+            String macAddress = results.get(SnmpOID.Ruckus.DEV_MAC + "." + deviceOID);
             devicesMacAddress.add(macAddress);
             Map<String, Object> deviceData = new HashMap<>();
+            String mac = results.get(SnmpOID.Ruckus.DEV_NAME + "." + deviceOID);
 
-            deviceData.put("validForStats", false);
+            Map<String, Long> data = cache.getFlows(mac);
+
+            Long sendData = Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_SENT_DATA + "." + deviceOID)) * 1024L;
+            Long recvData = Long.valueOf(results.get(SnmpOID.Ruckus.DEV_CLIENT_RECV_DATA + "." + deviceOID)) * 1024L;
+
+            if (data == null) {
+                Map<String, Long> newData = new HashMap<>();
+                newData.put("devInterfaceSentBytes", sendData);
+                newData.put("devInterfaceRecvBytes", recvData);
+                deviceData.put("validForStats", false);
+                cache.addCache(mac, newData);
+            } else {
+                deviceData.put("validForStats", true);
+                deviceData.put("devInterfaceSentBytes", sendData - data.get("devInterfaceSentBytes"));
+                deviceData.put("devInterfaceRecvBytes", recvData - data.get("devInterfaceRecvBytes"));
+
+                Map<String, Long> newData = new HashMap<>();
+                newData.put("devInterfaceSentBytes", sendData);
+                newData.put("devInterfaceRecvBytes", recvData);
+                cache.addCache(mac, newData);
+            }
+
             deviceData.put("sensorIp", snmpTask.getIP());
             deviceData.put("enrichment", snmpTask.getEnrichment());
             deviceData.put("first_switched", last_time);
             deviceData.put("timestamp", timeStart);
             deviceData.put("type", "ap-stats");
-            deviceData.put("devName", results.get(SnmpOID.WirelessLanController.DEV_NAME + "." + deviceOID));
+            deviceData.put("devName", mac);
             deviceData.put("devInterfaceMac", macAddress);
             deviceData.put("devClientCount",
-                    results.get(SnmpOID.WirelessLanController.DEV_CLIENTS_COUNT + "." + deviceOID));
-            deviceData.put("devStatus", "on");
+                    results.get(SnmpOID.Ruckus.DEV_CLIENT_COUNT + "." + deviceOID));
 
-            // Data for Channel Utilization
-            deviceData.put("dev24LoadChannelUtilization",
-                    results.get(SnmpOID.WirelessLanController.DEV_LOAD_CHANNEL_UTILIZATION + "." + deviceOID + ".0"));
-            deviceData.put("dev5LoadChannelUtilization",
-                    results.get(SnmpOID.WirelessLanController.DEV_LOAD_CHANNEL_UTILIZATION + "." + deviceOID + ".1"));
+            deviceData.put("devStatus", parseStatus(results.get(SnmpOID.Ruckus.DEV_STATUS + "." + deviceOID)));
+
 
             devicesData.add(deviceData);
         }
@@ -167,5 +187,14 @@ public class SnmpWLCWorker extends Worker {
     @Override
     public void shutdown() {
         this.running.set(false);
+    }
+
+    public String parseStatus(String status) {
+        String parsedStatus;
+        if (status.equals("1"))
+            parsedStatus = "on";
+        else
+            parsedStatus = "off";
+        return parsedStatus;
     }
 }

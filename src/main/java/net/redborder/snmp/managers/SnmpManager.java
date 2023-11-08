@@ -2,10 +2,8 @@ package net.redborder.snmp.managers;
 
 import net.redborder.clusterizer.Task;
 import net.redborder.clusterizer.TasksChangedListener;
-import net.redborder.snmp.workers.SnmpMerakiWorker;
 import net.redborder.snmp.tasks.SnmpTask;
-import net.redborder.snmp.workers.SnmpWLCWorker;
-import net.redborder.snmp.workers.Worker;
+import net.redborder.snmp.workers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +27,7 @@ public class SnmpManager extends Thread implements TasksChangedListener {
 
     @Override
     public void run() {
-        log.info("KafkaManager is started!");
+        log.info("SnmpManager is started!");
 
         running.set(true);
         while (running.get()) {
@@ -44,8 +42,16 @@ public class SnmpManager extends Thread implements TasksChangedListener {
                     if (!workers.containsKey(uuid)) {
                         log.info("Starting {}", uuid);
 
-                        if(task.getType().toUpperCase().equals("MERAKI")){
+                        if (task.getType().toUpperCase().equals("MERAKI")) {
                             SnmpMerakiWorker worker = new SnmpMerakiWorker(task, queue);
+                            workers.put(uuid, worker);
+                            worker.start();
+                        } else if (task.getType().toUpperCase().equals("RUCKUS")) {
+                            SnmpRuckusWorker worker = new SnmpRuckusWorker(task, queue);
+                            workers.put(uuid, worker);
+                            worker.start();
+                        } else if (task.getType().toUpperCase().equals("STANDARD")) {
+                            SnmpStandardWorker worker = new SnmpStandardWorker(task, queue);
                             workers.put(uuid, worker);
                             worker.start();
                         } else {

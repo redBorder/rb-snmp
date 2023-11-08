@@ -62,20 +62,43 @@ public class KafkaManager extends Thread {
                 if (event != null) {
                     String directions[] = new String[]{"ingress", "egress"};
                     Map<String, Object> state = new HashMap<>();
-                    Long time_now = System.currentTimeMillis() / 1000;
-                    time_now = time_now - (time_now%60);
+                    Long time_now = (Long) event.get("timestamp");
+                    Long time_before = (Long) event.get("first_switched");
+
                     Map<String, Object> enrichment = (Map<String, Object>) event.get("enrichment");
 
                     if (event.get("devClientCount") != null) {
                         state.put("wireless_station", event.get("devInterfaceMac"));
-                        if(event.get("devName") != null)
-                            state.put("wireless_station_name", event.get("devName"));
+                        if (event.get("devName") != null) state.put("wireless_station_name", event.get("devName"));
+                        if(event.get("devNetworkName") != null) state.put("network_name", event.get("devNetworkName"));
                         state.put("client_count", event.get("devClientCount"));
                         state.put("type", "snmp_apMonitor");
                         state.put("timestamp", time_now);
                         state.put("status", event.get("devStatus"));
                         state.put("sensor_ip", event.get("sensorIp"));
                         state.putAll(enrichment);
+
+                        // Data for Load Utilization (Channel 2.4)
+                        if (event.get("dev24LoadChannelUtilization") != null) {
+                            Map<String, Object> state24 = new HashMap<>();
+                            state24.put("type", "channel_load_2_4");
+                            state24.put("wireless_station", event.get("devInterfaceMac"));
+                            state24.put("timestamp", time_now);
+                            state24.put("value", Integer.valueOf((String) event.get("dev24LoadChannelUtilization")));
+                            state24.putAll(enrichment);
+                            send("rb_state", (String) event.get("devInterfaceMac"), state24);
+                        }
+
+                        // Data for Load Utilization (Channel 5)
+                        if (event.get("dev5LoadChannelUtilization") != null) {
+                            Map<String, Object> state5 = new HashMap<>();
+                            state5.put("type", "channel_load_5");
+                            state5.put("wireless_station", event.get("devInterfaceMac"));
+                            state5.put("timestamp", time_now);
+                            state5.put("value", Integer.valueOf((String) event.get("dev5LoadChannelUtilization")));
+                            state5.putAll(enrichment);
+                            send("rb_state", (String) event.get("devInterfaceMac"), state5);
+                        }
 
                         send("rb_state", (String) event.get("devInterfaceMac"), state);
                     }
@@ -86,22 +109,27 @@ public class KafkaManager extends Thread {
                             Long bytes = (Long) event.get("devInterfaceSentBytes");
                             Long pkts = (Long) event.get("devInterfaceSentPkts");
                             if (direction.equals("ingress")) {
-                                bytes = (Long) event.get("devInterfaceSentPkts");
-                                pkts = (Long) event.get("devInterfaceSentBytes");
+                                bytes = (Long) event.get("devInterfaceRecvBytes");
+                                pkts = (Long) event.get("devInterfaceRecvPkts");
                             }
-                            if (bytes < 0 || pkts < 0) {
+                            if ((bytes != null && bytes <= 0) || (pkts != null && pkts <= 0)) {
                                 log.warn("Flow's lower than 0!. Sensor: {}, AP: {}, Bytes: {}, Pkts: {}",
                                         event.get("sensor_ip"), event.get("devInterfaceMac"), bytes, pkts);
                             } else {
-                                directionStats.put("bytes", bytes);
-                                directionStats.put("pkts", pkts);
+                                if (bytes != null) directionStats.put("bytes", bytes);
+                                if (pkts != null) directionStats.put("pkts", pkts);
                                 directionStats.put("direction", direction);
                                 directionStats.put("timestamp", time_now);
-                                directionStats.put("first_switched", time_now - (Long) event.get("timeSwitched"));
+                                directionStats.put("first_switched", time_before);
                                 directionStats.put("wireless_station", event.get("devInterfaceMac"));
-                                directionStats.put("interface_name", event.get("devInterfaceName"));
+                                if(event.get("devNetworkName") != null) directionStats.put("network_name", event.get("devNetworkName"));
+
+                                Object interfaceName = event.get("devInterfaceName");
+                                if (interfaceName != null) directionStats.put("interface_name", interfaceName);
+
                                 directionStats.put("device_category", "stations");
                                 directionStats.put("type", "snmp-stats");
+                                directionStats.put("dot11_status", "ASSOCIATED");
                                 directionStats.put("sensor_ip", event.get("sensorIp"));
                                 directionStats.putAll(enrichment);
 
